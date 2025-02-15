@@ -92,7 +92,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: max_health_app
+    container_name: max_health_app_backend
     environment:
       DATABASE_URL: "host=aws-0-ap-southeast-1.pooler.supabase.com user=postgres password=b2HMFWKldFsCQgiF dbname=postgres port=6543 sslmode=require TimeZone=Asia/Jakarta"
     ports:
