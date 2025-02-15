@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: max_health
+    volumes:
+      - ./sql/ddl.sql:/docker-entrypoint-initdb.d/001.sql
+      - ./sql/dml.sql:/docker-entrypoint-initdb.d/002.sql
+      - ./sql/cities-dml.sql:/docker-entrypoint-initdb.d/003.sql
+      - ./sql/drugs-dml.sql:/docker-entrypoint-initdb.d/004.sql
+      - ./sql/pharmacy-dml.sql:/docker-entrypoint-initdb.d/005.sql
+      - ./sql/pharmacy-geom.sql:/docker-entrypoint-initdb.d/006.sql
+      - ./sql/pharmacy-drugs-dml-1.sql:/docker-entrypoint-initdb.d/007.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "host=db user=postgres password=postgres dbname=max_health port=5432 sslmode=disable TimeZone=Asia/Jakarta"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
