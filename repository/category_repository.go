@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/pgx"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -22,7 +24,7 @@ type categoryRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewCategoryRepositoryPostgres(db *sql.DB) categoryRepositoryPostgres {
+func NewCategoryRepositoryPostgres(db *pgxpool.Pool) categoryRepositoryPostgres {
 	return categoryRepositoryPostgres{
 		db: db,
 	}
@@ -31,7 +33,7 @@ func NewCategoryRepositoryPostgres(db *sql.DB) categoryRepositoryPostgres {
 func (r *categoryRepositoryPostgres) FindAllCategories(ctx context.Context) ([]entity.DrugCategory, error) {
 	query := database.FindAllCategories
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +61,7 @@ func (r *categoryRepositoryPostgres) FindAllCategories(ctx context.Context) ([]e
 }
 
 func (r *categoryRepositoryPostgres) DeleteOneCategoryById(ctx context.Context, categoryId int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteOneCategoryById, categoryId)
+	_, err := r.db.Exec(ctx, database.DeleteOneCategoryById, categoryId)
 	if err != nil {
 		return err
 	}
@@ -69,9 +71,9 @@ func (r *categoryRepositoryPostgres) DeleteOneCategoryById(ctx context.Context, 
 func (r *categoryRepositoryPostgres) FindOneCategoryById(ctx context.Context, categoryId int64) (*entity.DrugCategory, error) {
 	var category entity.DrugCategory
 
-	err := r.db.QueryRowContext(ctx, database.GetOneCategoryById, categoryId).Scan(&category.Id, &category.Url, &category.Name)
+	err := r.db.QueryRow(ctx, database.GetOneCategoryById, categoryId).Scan(&category.Id, &category.Url, &category.Name)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -84,9 +86,9 @@ func (r *categoryRepositoryPostgres) FindOneCategoryById(ctx context.Context, ca
 func (r *categoryRepositoryPostgres) FindOneCategoryByName(ctx context.Context, name string) (*entity.DrugCategory, error) {
 	var category entity.DrugCategory
 
-	err := r.db.QueryRowContext(ctx, database.GetOneCategoryByName, name).Scan(&category.Id, &category.Name, &category.Url)
+	err := r.db.QueryRow(ctx, database.GetOneCategoryByName, name).Scan(&category.Id, &category.Name, &category.Url)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -97,7 +99,7 @@ func (r *categoryRepositoryPostgres) FindOneCategoryByName(ctx context.Context, 
 }
 
 func (r *categoryRepositoryPostgres) PostOneCategory(ctx context.Context, category entity.DrugCategory) error {
-	_, err := r.db.ExecContext(ctx, database.PostOneCategoryQuery, category.Name, category.Url)
+	_, err := r.db.Exec(ctx, database.PostOneCategoryQuery, category.Name, category.Url)
 	if err != nil {
 		return err
 	}
@@ -106,7 +108,7 @@ func (r *categoryRepositoryPostgres) PostOneCategory(ctx context.Context, catego
 }
 
 func (r *categoryRepositoryPostgres) UpdateOneCategoryById(ctx context.Context, category entity.DrugCategory) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateOneCategoryQuery, category.Name, category.Url, category.Id)
+	_, err := r.db.Exec(ctx, database.UpdateOneCategoryQuery, category.Name, category.Url, category.Id)
 	if err != nil {
 		return err
 	}
@@ -117,9 +119,9 @@ func (r *categoryRepositoryPostgres) UpdateOneCategoryById(ctx context.Context, 
 func (r *categoryRepositoryPostgres) FindSimilarCategory(ctx context.Context, category entity.DrugCategory) (*entity.DrugCategory, error) {
 	var oldCategory entity.DrugCategory
 
-	err := r.db.QueryRowContext(ctx, database.GetSimilarCategory, category.Name, category.Id).Scan(&oldCategory.Id, &oldCategory.Name, &oldCategory.Url)
+	err := r.db.QueryRow(ctx, database.GetSimilarCategory, category.Name, category.Id).Scan(&oldCategory.Id, &oldCategory.Name, &oldCategory.Url)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 

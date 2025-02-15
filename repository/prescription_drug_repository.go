@@ -2,8 +2,9 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -17,14 +18,14 @@ type prescriptionDrugRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewPrescriptionDrugRepositoryPostgres(db *sql.DB) prescriptionDrugRepositoryPostgres {
+func NewPrescriptionDrugRepositoryPostgres(db *pgxpool.Pool) prescriptionDrugRepositoryPostgres {
 	return prescriptionDrugRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *prescriptionDrugRepositoryPostgres) PostOnePrescriptionDrug(ctx context.Context, prescriptionId int64, prescriptionDrug entity.PrescriptionDrug) error {
-	_, err := r.db.ExecContext(ctx, database.PostOnePrescriptionDrugQuery, prescriptionId, prescriptionDrug.Drug.Id, prescriptionDrug.Quantity, prescriptionDrug.Note)
+	_, err := r.db.Exec(ctx, database.PostOnePrescriptionDrugQuery, prescriptionId, prescriptionDrug.Drug.Id, prescriptionDrug.Quantity, prescriptionDrug.Note)
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func (r *prescriptionDrugRepositoryPostgres) PostOnePrescriptionDrug(ctx context
 }
 
 func (r *prescriptionDrugRepositoryPostgres) GetAllPrescriptionDrug(ctx context.Context, prescriptionId int64) ([]entity.PrescriptionDrug, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetAllPrescriptionDrugQuery, prescriptionId)
+	rows, err := r.db.Query(ctx, database.GetAllPrescriptionDrugQuery, prescriptionId)
 	if err != nil {
 		return nil, err
 	}

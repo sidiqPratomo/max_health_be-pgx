@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -25,14 +26,14 @@ type doctorRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewDoctorRepositoryPostgres(db *sql.DB) doctorRepositoryPostgres {
+func NewDoctorRepositoryPostgres(db *pgxpool.Pool) doctorRepositoryPostgres {
 	return doctorRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *doctorRepositoryPostgres) PostOneDoctor(ctx context.Context, accountId int, specializationId int64, certificateName string) error {
-	_, err := r.db.ExecContext(ctx, database.PostOneDoctorQuery, accountId, specializationId, certificateName)
+	_, err := r.db.Exec(ctx, database.PostOneDoctorQuery, accountId, specializationId, certificateName)
 	if err != nil {
 		return err
 	}
@@ -41,7 +42,7 @@ func (r *doctorRepositoryPostgres) PostOneDoctor(ctx context.Context, accountId 
 }
 
 func (r *doctorRepositoryPostgres) UpdateDataOne(ctx context.Context, doctor *entity.DetailedDoctor) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateOneDoctorQuery, doctor.FeePerPatient, doctor.Experience, doctor.Id)
+	_, err := r.db.Exec(ctx, database.UpdateOneDoctorQuery, doctor.FeePerPatient, doctor.Experience, doctor.Id)
 	if err != nil {
 		return err
 	}
@@ -51,7 +52,7 @@ func (r *doctorRepositoryPostgres) UpdateDataOne(ctx context.Context, doctor *en
 
 func (r *doctorRepositoryPostgres) FindSpecializationById(ctx context.Context, specializationId int64) (*string, error) {
 	var specializationName string
-	err := r.db.QueryRowContext(ctx, database.FindSpecializationById, specializationId).Scan(&specializationName)
+	err := r.db.QueryRow(ctx, database.FindSpecializationById, specializationId).Scan(&specializationName)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -105,7 +106,7 @@ func (r *doctorRepositoryPostgres) GetAllDoctor(ctx context.Context, Sort []stri
 		OFFSET $2
 	`
 
-	rows, err := r.db.QueryContext(ctx, queries, Limit, offset)
+	rows, err := r.db.Query(ctx, queries, Limit, offset)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil, err
@@ -130,7 +131,7 @@ func (r *doctorRepositoryPostgres) GetAllDoctor(ctx context.Context, Sort []stri
 		FROM doctors d
 		JOIN accounts a ON a.account_id = d.account_id
 	` + whereClause
-	countRow := r.db.QueryRowContext(ctx, countQuery)
+	countRow := r.db.QueryRow(ctx, countQuery)
 	if err := countRow.Scan(&pageInfo.ItemCount); err != nil {
 		return nil, nil, err
 	}
@@ -149,7 +150,7 @@ func (r *doctorRepositoryPostgres) GetAllDoctor(ctx context.Context, Sort []stri
 func (r *doctorRepositoryPostgres) FindDoctorByAccountId(ctx context.Context, accountId int64) (*entity.Doctor, error) {
 	var doctor entity.Doctor
 
-	if err := r.db.QueryRowContext(ctx, database.FindDoctorByAccountIdQuery, accountId).Scan(&doctor.Id, &doctor.Experience, &doctor.SpecializationId,
+	if err := r.db.QueryRow(ctx, database.FindDoctorByAccountIdQuery, accountId).Scan(&doctor.Id, &doctor.Experience, &doctor.SpecializationId,
 		&doctor.SpecializationName, &doctor.FeePerPatient, &doctor.Certificate); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -163,7 +164,7 @@ func (r *doctorRepositoryPostgres) FindDoctorByAccountId(ctx context.Context, ac
 func (r *doctorRepositoryPostgres) FindDoctorByDoctorId(ctx context.Context, doctorId int64) (*entity.DetailedDoctor, error) {
 	var doctor entity.DetailedDoctor
 
-	if err := r.db.QueryRowContext(ctx, database.FindDoctorByDoctorIdQuery, doctorId).Scan(&doctor.Id, &doctor.Email,
+	if err := r.db.QueryRow(ctx, database.FindDoctorByDoctorIdQuery, doctorId).Scan(&doctor.Id, &doctor.Email,
 		&doctor.Name, &doctor.ProfilePicture, &doctor.Experience, &doctor.SpecializationId,
 		&doctor.SpecializationName, &doctor.FeePerPatient); err != nil {
 		if err == sql.ErrNoRows {
@@ -176,7 +177,7 @@ func (r *doctorRepositoryPostgres) FindDoctorByDoctorId(ctx context.Context, doc
 }
 
 func (r *doctorRepositoryPostgres) UpdateDoctorStatus(ctx context.Context, doctorAccountId int64, isOnline bool) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateDoctorStatusQuery, isOnline, doctorAccountId)
+	_, err := r.db.Exec(ctx, database.UpdateDoctorStatusQuery, isOnline, doctorAccountId)
 	if err != nil {
 		return err
 	}
@@ -186,7 +187,7 @@ func (r *doctorRepositoryPostgres) UpdateDoctorStatus(ctx context.Context, docto
 
 func (r *doctorRepositoryPostgres) GetDoctorIsOnline(ctx context.Context, doctorAccountId int64) (*bool, error) {
 	var isOnline bool
-	err := r.db.QueryRowContext(ctx, database.GetDoctorIsOnlineQuery, doctorAccountId).Scan(&isOnline)
+	err := r.db.QueryRow(ctx, database.GetDoctorIsOnlineQuery, doctorAccountId).Scan(&isOnline)
 	if err != nil {
 		return nil, err
 	}

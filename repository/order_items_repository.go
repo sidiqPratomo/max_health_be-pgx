@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 	"github.com/sidiqPratomo/max-health-backend/util"
@@ -21,14 +22,14 @@ type orderItemRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewOrderItemRepositoryPostgres(db *sql.DB) orderItemRepositoryPostgres {
+func NewOrderItemRepositoryPostgres(db *pgxpool.Pool) orderItemRepositoryPostgres {
 	return orderItemRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *orderItemRepositoryPostgres) FindAllByOrderPharmacyId(ctx context.Context, orderPharmacyId int64) ([]entity.OrderItem, error) {
-	rows, err := r.db.QueryContext(ctx, database.FindAllOrderItemByOrderPharmacyId, orderPharmacyId)
+	rows, err := r.db.Query(ctx, database.FindAllOrderItemByOrderPharmacyId, orderPharmacyId)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func (r *orderItemRepositoryPostgres) FindPharmacyDrugCategorySalesVolumeRevenue
 		sql += ` DESC`
 	}
 
-	rows, err := r.db.QueryContext(ctx, sql, validatedGetReportQuery.PharmacyId, validatedGetReportQuery.MaxDate, validatedGetReportQuery.MinDate)
+	rows, err := r.db.Query(ctx, sql, validatedGetReportQuery.PharmacyId, validatedGetReportQuery.MaxDate, validatedGetReportQuery.MinDate)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func (r *orderItemRepositoryPostgres) FindPharmacyDrugSalesVolumeRevenueByPharma
 		sql += ` DESC`
 	}
 
-	rows, err := r.db.QueryContext(ctx, sql, validatedGetReportQuery.PharmacyId, validatedGetReportQuery.MaxDate, validatedGetReportQuery.MinDate)
+	rows, err := r.db.Query(ctx, sql, validatedGetReportQuery.PharmacyId, validatedGetReportQuery.MaxDate, validatedGetReportQuery.MinDate)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +162,7 @@ func (r *orderItemRepositoryPostgres) PostOrderItems(ctx context.Context, orderP
 		}
 	}
 
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}

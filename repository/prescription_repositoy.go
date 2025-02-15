@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -21,7 +23,7 @@ type prescriptionRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewPrescriptionRepositoryPostgres(db *sql.DB) prescriptionRepositoryPostgres {
+func NewPrescriptionRepositoryPostgres(db *pgxpool.Pool) prescriptionRepositoryPostgres {
 	return prescriptionRepositoryPostgres{
 		db: db,
 	}
@@ -30,7 +32,7 @@ func NewPrescriptionRepositoryPostgres(db *sql.DB) prescriptionRepositoryPostgre
 func (r *prescriptionRepositoryPostgres) CreateOnePrescription(ctx context.Context, userAccountId, doctorAccountId int64) (*int64, error) {
 	var prescriptionId int64
 
-	err := r.db.QueryRowContext(ctx, database.CreateOnePrescriptionQuery, userAccountId, doctorAccountId).Scan(&prescriptionId)
+	err := r.db.QueryRow(ctx, database.CreateOnePrescriptionQuery, userAccountId, doctorAccountId).Scan(&prescriptionId)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +43,9 @@ func (r *prescriptionRepositoryPostgres) CreateOnePrescription(ctx context.Conte
 func (r *prescriptionRepositoryPostgres) GetPrescriptionById(ctx context.Context, prescriptionId int64) (*entity.Prescription, error) {
 	var prescription entity.Prescription
 
-	err := r.db.QueryRowContext(ctx, database.GetPrescriptionByIdQuery, prescriptionId).Scan(&prescription.UserAccountId, &prescription.DoctorAccountId, &prescription.RedeemedAt, &prescription.OrderedAt)
+	err := r.db.QueryRow(ctx, database.GetPrescriptionByIdQuery, prescriptionId).Scan(&prescription.UserAccountId, &prescription.DoctorAccountId, &prescription.RedeemedAt, &prescription.OrderedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -56,7 +58,7 @@ func (r *prescriptionRepositoryPostgres) GetPrescriptionById(ctx context.Context
 }
 
 func (r *prescriptionRepositoryPostgres) SetPrescriptionRedeemedNow(ctx context.Context, prescriptionId int64) error {
-	_, err := r.db.ExecContext(ctx, database.SetPrescriptionRedeemedNowQuery, prescriptionId)
+	_, err := r.db.Exec(ctx, database.SetPrescriptionRedeemedNowQuery, prescriptionId)
 	if err != nil {
 		return err
 	}
@@ -65,7 +67,7 @@ func (r *prescriptionRepositoryPostgres) SetPrescriptionRedeemedNow(ctx context.
 }
 
 func (r *prescriptionRepositoryPostgres) GetPrescriptionListByUserAccountId(ctx context.Context, accountId int64, limit, offset int) ([]entity.Prescription, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetPrescriptionListByUserAccountIdQuery, accountId, limit, offset)
+	rows, err := r.db.Query(ctx, database.GetPrescriptionListByUserAccountIdQuery, accountId, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +106,7 @@ func (r *prescriptionRepositoryPostgres) GetPrescriptionListByUserAccountId(ctx 
 func (r *prescriptionRepositoryPostgres) GetPrescriptionListByUserAccountIdTotalItem(ctx context.Context, accountId int64) (int, error) {
 	var totalPage int
 
-	err := r.db.QueryRowContext(ctx, database.GetPrescriptionListByUserAccountIdTotalPageQuery, accountId).Scan(&totalPage)
+	err := r.db.QueryRow(ctx, database.GetPrescriptionListByUserAccountIdTotalPageQuery, accountId).Scan(&totalPage)
 	if err != nil {
 		return totalPage, err
 	}
@@ -113,7 +115,7 @@ func (r *prescriptionRepositoryPostgres) GetPrescriptionListByUserAccountIdTotal
 }
 
 func (r *prescriptionRepositoryPostgres) SetPrescriptionOrderedAtNow(ctx context.Context, prescriptionId int64) error {
-	_, err := r.db.ExecContext(ctx, database.SetPrescriptionOrderedAtNowQuery, prescriptionId)
+	_, err := r.db.Exec(ctx, database.SetPrescriptionOrderedAtNowQuery, prescriptionId)
 	if err != nil {
 		return err
 	}

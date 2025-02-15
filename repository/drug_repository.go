@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/pgx"
 	"math"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 	"github.com/sidiqPratomo/max-health-backend/util"
@@ -28,7 +30,7 @@ type drugRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewDrugRepositoryPostgres(db *sql.DB) drugRepositoryPostgres {
+func NewDrugRepositoryPostgres(db *pgxpool.Pool) drugRepositoryPostgres {
 	return drugRepositoryPostgres{
 		db: db,
 	}
@@ -37,7 +39,7 @@ func NewDrugRepositoryPostgres(db *sql.DB) drugRepositoryPostgres {
 func (r *drugRepositoryPostgres) GetOneActiveDrugById(ctx context.Context, drugId int64) (*entity.Drug, error) {
 	var drug entity.Drug
 
-	err := r.db.QueryRowContext(ctx, database.GetOneActiveDrugByIdQuery, drugId).Scan(
+	err := r.db.QueryRow(ctx, database.GetOneActiveDrugByIdQuery, drugId).Scan(
 		&drug.Id,
 		&drug.Name,
 		&drug.GenericName,
@@ -61,7 +63,7 @@ func (r *drugRepositoryPostgres) GetOneActiveDrugById(ctx context.Context, drugI
 		&drug.IsPrescriptionRequired,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -73,12 +75,12 @@ func (r *drugRepositoryPostgres) GetOneActiveDrugById(ctx context.Context, drugI
 
 func (r *drugRepositoryPostgres) GetDrugById(ctx context.Context, drugId int64) (*entity.DrugDetail, error){
 	drug := entity.DrugDetail{}
-	err := r.db.QueryRowContext(ctx, database.GetDrugById, drugId).Scan(
+	err := r.db.QueryRow(ctx, database.GetDrugById, drugId).Scan(
 		&drug.Id, &drug.Name, &drug.GenericName, &drug.Content, &drug.Manufacture, &drug.Description, 
 		&drug.ClassificationId, &drug.FormId, &drug.UnitInPack, &drug.SellingUnit, 
 		&drug.Weight, &drug.Height, &drug.Length, &drug.Width, &drug.Image,&drug.DrugCategoryId, &drug.IsPrescriptionRequired, &drug.IsActive)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -90,9 +92,9 @@ func (r *drugRepositoryPostgres) GetDrugById(ctx context.Context, drugId int64) 
 func (r *drugRepositoryPostgres) GetDrugByName(ctx context.Context, drugName string) (*entity.Drug, error) {
 	var drug entity.Drug
 
-	err := r.db.QueryRowContext(ctx, database.GetDrugByNameQuery, drugName).Scan(&drug.Id, &drug.Name, &drug.GenericName, &drug.Content, &drug.Manufacture)
+	err := r.db.QueryRow(ctx, database.GetDrugByNameQuery, drugName).Scan(&drug.Id, &drug.Name, &drug.GenericName, &drug.Content, &drug.Manufacture)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -102,7 +104,7 @@ func (r *drugRepositoryPostgres) GetDrugByName(ctx context.Context, drugName str
 }
 
 func (r *drugRepositoryPostgres) UpdateOneDrug(ctx context.Context, drug entity.Drug) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateOneDrugQuery,
+	_, err := r.db.Exec(ctx, database.UpdateOneDrugQuery,
 		drug.Id,
 		drug.Name,
 		drug.GenericName,
@@ -132,7 +134,7 @@ func (r *drugRepositoryPostgres) UpdateOneDrug(ctx context.Context, drug entity.
 func (r *drugRepositoryPostgres) GetOneDrugById(ctx context.Context, drugId int64) (*entity.Drug, error) {
 	var drug entity.Drug
 
-	err := r.db.QueryRowContext(ctx, database.GetOneDrugByIdQuery, drugId).Scan(
+	err := r.db.QueryRow(ctx, database.GetOneDrugByIdQuery, drugId).Scan(
 		&drug.Id,
 		&drug.Name,
 		&drug.GenericName,
@@ -157,7 +159,7 @@ func (r *drugRepositoryPostgres) GetOneDrugById(ctx context.Context, drugId int6
 		&drug.IsPrescriptionRequired,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -183,7 +185,7 @@ func (r *drugRepositoryPostgres) GetAllDrugs(ctx context.Context, validatedGetPr
 	query += ` OFFSET $` + strconv.Itoa(len(args)+1)
 	args = append(args, (validatedGetProductAdminQuery.Limit * (validatedGetProductAdminQuery.Page - 1)))
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -241,9 +243,9 @@ func (r *drugRepositoryPostgres) GetAllDrugs(ctx context.Context, validatedGetPr
 func (r *drugRepositoryPostgres) GetDrugIdByName(ctx context.Context, drugName string) (*int64, error) {
 	var drugId int64
 
-	err := r.db.QueryRowContext(ctx, database.GetDrugIdByNameQuery, drugName).Scan(&drugId)
+	err := r.db.QueryRow(ctx, database.GetDrugIdByNameQuery, drugName).Scan(&drugId)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -254,7 +256,7 @@ func (r *drugRepositoryPostgres) GetDrugIdByName(ctx context.Context, drugName s
 }
 
 func (r *drugRepositoryPostgres) CreateOneDrug(ctx context.Context, drug entity.Drug) error {
-	_, err := r.db.ExecContext(ctx, database.CreateOneDrugQuery,
+	_, err := r.db.Exec(ctx, database.CreateOneDrugQuery,
 		drug.Name,
 		drug.GenericName,
 		drug.Content,
@@ -281,7 +283,7 @@ func (r *drugRepositoryPostgres) CreateOneDrug(ctx context.Context, drug entity.
 }
 
 func (r *drugRepositoryPostgres) DeleteOneDrug(ctx context.Context, drugId int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteOneDrugQuery, drugId)
+	_, err := r.db.Exec(ctx, database.DeleteOneDrugQuery, drugId)
 	if err != nil {
 		return err
 	}
@@ -299,7 +301,7 @@ func (r *drugRepositoryPostgres) GetDrugsByPharmacyId(ctx context.Context, pharm
 		return nil, nil, err
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, pharmacyId, intLimit, offset, search)
+	rows, err := r.db.Query(ctx, query, pharmacyId, intLimit, offset, search)
 	if err != nil {
 		return nil,nil, err
 	}
@@ -351,7 +353,7 @@ func (r *drugRepositoryPostgres) GetDrugsByPharmacyId(ctx context.Context, pharm
 		ON pd.drug_id = d.drug_id
 		WHERE pd.pharmacy_id= $1 and pd.deleted_at IS NULL AND d.deleted_at IS NULL and d.drug_name ILIKE '%' || $2 || '%'
 	`
-	countRow := r.db.QueryRowContext(ctx, countQuery, pharmacyId, search)
+	countRow := r.db.QueryRow(ctx, countQuery, pharmacyId, search)
 	if err := countRow.Scan(&pageInfo.ItemCount); err != nil {
 		return nil, nil, err
 	}

@@ -117,7 +117,7 @@ func (u *pharmacyUsecaseImpl) CreateOnePharmacy(ctx context.Context, accountId i
 		courierIds = append(courierIds, courier.Id)
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -211,7 +211,7 @@ func (u *pharmacyUsecaseImpl) UpdateOnePharmacy(ctx context.Context, accountId i
 		}
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -279,7 +279,7 @@ func (u *pharmacyUsecaseImpl) DeleteOnePharmacyById(ctx context.Context, account
 		return apperror.OngoingOrderExistsError()
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

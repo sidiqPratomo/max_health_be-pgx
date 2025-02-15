@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -23,7 +25,7 @@ type addressRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewAddressRepositoryPostgres(db *sql.DB) addressRepositoryPostgres {
+func NewAddressRepositoryPostgres(db *pgxpool.Pool) addressRepositoryPostgres {
 	return addressRepositoryPostgres{
 		db: db,
 	}
@@ -32,7 +34,7 @@ func NewAddressRepositoryPostgres(db *sql.DB) addressRepositoryPostgres {
 func (r *addressRepositoryPostgres) FindAllProvinces(ctx context.Context) ([]entity.Province, error) {
 	query := database.FindAllProvinces
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +68,8 @@ func (r *addressRepositoryPostgres) FindAllProvinces(ctx context.Context) ([]ent
 func (r *addressRepositoryPostgres) FindOneProvinceByName(ctx context.Context, name string) (*int64, error) {
 	var provinceId int64
 
-	if err := r.db.QueryRowContext(ctx, database.FindOneProvinceByName, name).Scan(&provinceId); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, database.FindOneProvinceByName, name).Scan(&provinceId); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -80,7 +82,7 @@ func (r *addressRepositoryPostgres) FindOneProvinceByName(ctx context.Context, n
 func (r *addressRepositoryPostgres) FindAllCitiesByProvinceCode(ctx context.Context, provinceCode string) ([]entity.City, error) {
 	query := database.FindAllCitiesByProvinceCode
 
-	rows, err := r.db.QueryContext(ctx, query, provinceCode)
+	rows, err := r.db.Query(ctx, query, provinceCode)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +117,8 @@ func (r *addressRepositoryPostgres) FindAllCitiesByProvinceCode(ctx context.Cont
 func (r *addressRepositoryPostgres) FindOneCityByName(ctx context.Context, name string) (*int64, error) {
 	var cityId int64
 
-	if err := r.db.QueryRowContext(ctx, database.FindOneCityByName, name).Scan(&cityId); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, database.FindOneCityByName, name).Scan(&cityId); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -129,7 +131,7 @@ func (r *addressRepositoryPostgres) FindOneCityByName(ctx context.Context, name 
 func (r *addressRepositoryPostgres) FindAllDistrictsByCityCode(ctx context.Context, cityCode string) ([]entity.District, error) {
 	query := database.FindAllDistrictsByCityCode
 
-	rows, err := r.db.QueryContext(ctx, query, cityCode)
+	rows, err := r.db.Query(ctx, query, cityCode)
 	if err != nil {
 		return nil, err
 	}
@@ -164,8 +166,8 @@ func (r *addressRepositoryPostgres) FindAllDistrictsByCityCode(ctx context.Conte
 func (r *addressRepositoryPostgres) FindOneDistrictByName(ctx context.Context, name string) (*int64, error) {
 	var districtId int64
 
-	if err := r.db.QueryRowContext(ctx, database.FindOneDistrictByName, name).Scan(&districtId); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, database.FindOneDistrictByName, name).Scan(&districtId); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -178,7 +180,7 @@ func (r *addressRepositoryPostgres) FindOneDistrictByName(ctx context.Context, n
 func (r *addressRepositoryPostgres) FindAllSubdistrictsByDistrictCode(ctx context.Context, districtCode string) ([]entity.Subdistrict, error) {
 	query := database.FindAllSubdistrictsByDistrictCode
 
-	rows, err := r.db.QueryContext(ctx, query, districtCode)
+	rows, err := r.db.Query(ctx, query, districtCode)
 	if err != nil {
 		return nil, err
 	}
@@ -213,8 +215,8 @@ func (r *addressRepositoryPostgres) FindAllSubdistrictsByDistrictCode(ctx contex
 func (r *addressRepositoryPostgres) FindOneSubdistrictByName(ctx context.Context, name string) (*int64, error) {
 	var subdistrictId int64
 
-	if err := r.db.QueryRowContext(ctx, database.FindOneSubdistrictByName, name).Scan(&subdistrictId); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, database.FindOneSubdistrictByName, name).Scan(&subdistrictId); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 

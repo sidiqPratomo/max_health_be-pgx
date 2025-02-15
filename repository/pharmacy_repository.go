@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 	"github.com/sidiqPratomo/max-health-backend/util"
@@ -25,7 +26,7 @@ type pharmacyRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewPharmacyRepositoryPostgres(db *sql.DB) pharmacyRepositoryPostgres {
+func NewPharmacyRepositoryPostgres(db *pgxpool.Pool) pharmacyRepositoryPostgres {
 	return pharmacyRepositoryPostgres{
 		db: db,
 	}
@@ -37,7 +38,7 @@ func (r *pharmacyRepositoryPostgres) CreateOne(ctx context.Context, pharmacy *en
 	floatLatitude, _ := strconv.ParseFloat(pharmacy.Latitude, 32)
 	floatLongitude, _ := strconv.ParseFloat(pharmacy.Longitude, 32)
 
-	if err := r.db.QueryRowContext(ctx, database.CreateOnePharmacy, pharmacy.PharmacyManagerId, pharmacy.Name, pharmacy.PharmacistName, pharmacy.PharmacistLicenseNumber, pharmacy.PharmacistPhoneNumber, pharmacy.Address, pharmacy.City, pharmacy.Latitude, pharmacy.Longitude, floatLatitude, floatLongitude).Scan(&pharmacyId); err != nil {
+	if err := r.db.QueryRow(ctx, database.CreateOnePharmacy, pharmacy.PharmacyManagerId, pharmacy.Name, pharmacy.PharmacistName, pharmacy.PharmacistLicenseNumber, pharmacy.PharmacistPhoneNumber, pharmacy.Address, pharmacy.City, pharmacy.Latitude, pharmacy.Longitude, floatLatitude, floatLongitude).Scan(&pharmacyId); err != nil {
 		return nil, err
 	}
 
@@ -47,7 +48,7 @@ func (r *pharmacyRepositoryPostgres) CreateOne(ctx context.Context, pharmacy *en
 func (r *pharmacyRepositoryPostgres) FindOneById(ctx context.Context, id int64) (*entity.Pharmacy, error) {
 	var pharmacy entity.Pharmacy
 
-	if err := r.db.QueryRowContext(ctx, database.FindOnePharmacyById, id).Scan(&pharmacy.Id, &pharmacy.Name, &pharmacy.PharmacyManagerId); err != nil {
+	if err := r.db.QueryRow(ctx, database.FindOnePharmacyById, id).Scan(&pharmacy.Id, &pharmacy.Name, &pharmacy.PharmacyManagerId); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -62,7 +63,7 @@ func (r *pharmacyRepositoryPostgres) UpdateOne(ctx context.Context, pharmacy ent
 	floatLatitude, _ := strconv.ParseFloat(pharmacy.Latitude, 32)
 	floatLongitude, _ := strconv.ParseFloat(pharmacy.Longitude, 32)
 
-	_, err := r.db.ExecContext(ctx, database.UpdateOnePharmacy, pharmacy.Name, pharmacy.PharmacistName, pharmacy.PharmacistLicenseNumber, pharmacy.PharmacistPhoneNumber, pharmacy.Address, pharmacy.City, pharmacy.Latitude, pharmacy.Longitude, floatLatitude, floatLongitude, pharmacy.Id)
+	_, err := r.db.Exec(ctx, database.UpdateOnePharmacy, pharmacy.Name, pharmacy.PharmacistName, pharmacy.PharmacistLicenseNumber, pharmacy.PharmacistPhoneNumber, pharmacy.Address, pharmacy.City, pharmacy.Latitude, pharmacy.Longitude, floatLatitude, floatLongitude, pharmacy.Id)
 	if err != nil {
 		return err
 	}
@@ -71,7 +72,7 @@ func (r *pharmacyRepositoryPostgres) UpdateOne(ctx context.Context, pharmacy ent
 }
 
 func (r *pharmacyRepositoryPostgres) DeleteOneById(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteOnePharmacyById, id)
+	_, err := r.db.Exec(ctx, database.DeleteOnePharmacyById, id)
 	if err != nil {
 		return err
 	}
@@ -81,7 +82,7 @@ func (r *pharmacyRepositoryPostgres) DeleteOneById(ctx context.Context, id int64
 func (r *pharmacyRepositoryPostgres) GetOnePharmacyByPharmacyId(ctx context.Context, pharmacyId int64) (*entity.Pharmacy, error) {
 	pharmacy := entity.Pharmacy{}
 
-	err := r.db.QueryRowContext(ctx, database.GetOnePharmacyByPharmacyId, pharmacyId).
+	err := r.db.QueryRow(ctx, database.GetOnePharmacyByPharmacyId, pharmacyId).
 		Scan(
 			&pharmacy.Id,
 			&pharmacy.PharmacyManagerId,
@@ -108,7 +109,7 @@ func (r *pharmacyRepositoryPostgres) FindAllByManagerId(ctx context.Context, man
 	pharmacies := []entity.Pharmacy{}
 	pageInfo := &entity.PageInfo{}
 
-	rows, err := r.db.QueryContext(ctx, database.GetAllPharmacyByPharmacyManagerId, managerId, limit, offset, search)
+	rows, err := r.db.Query(ctx, database.GetAllPharmacyByPharmacyManagerId, managerId, limit, offset, search)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -140,7 +141,7 @@ func (r *pharmacyRepositoryPostgres) FindAllByManagerId(ctx context.Context, man
 		FROM pharmacies
 		where pharmacy_manager_id = $1 and pharmacy_name ILIKE '%' || $2 || '%' and deleted_at is null
 	`
-	countRow := r.db.QueryRowContext(ctx, countQuery, managerId, search)
+	countRow := r.db.QueryRow(ctx, countQuery, managerId, search)
 	if err := countRow.Scan(&pageInfo.ItemCount); err != nil {
 		return nil, nil, err
 	}
@@ -159,7 +160,7 @@ func (r *pharmacyRepositoryPostgres) FindAllByManagerId(ctx context.Context, man
 func (r *pharmacyRepositoryPostgres) GetAllCourierOptionsByPharmacyId(ctx context.Context, userAddressId, pharmacyId int64, weight float64) ([]entity.AvailableCourier, error) {
 	var availableCourierList []entity.AvailableCourier
 
-	rows, err := r.db.QueryContext(ctx, database.GetAllCourierOptionsByPharmacyId, userAddressId, pharmacyId)
+	rows, err := r.db.Query(ctx, database.GetAllCourierOptionsByPharmacyId, userAddressId, pharmacyId)
 	if err != nil {
 		return nil, err
 	}

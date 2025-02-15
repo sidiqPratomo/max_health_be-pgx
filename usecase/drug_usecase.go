@@ -336,7 +336,7 @@ func (u *drugUsecaseImpl) UpdateDrugsByPharmacyDrugId(ctx context.Context, pharm
 	if price.Cmp(decimal.NewFromInt(500)) < 0 {
 		return apperror.BadRequestError(errors.New("price cannot be less than 500"))
 	}
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -433,7 +433,7 @@ func (u *drugUsecaseImpl) PostStockMutation(ctx context.Context, req dto.PostSto
 	if req.RecipientPharmacyDrugId == req.SenderPharmacyDrugId {
 		return apperror.DuplicatePharmacyDrugIdError()
 	}
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

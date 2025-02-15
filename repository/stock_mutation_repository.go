@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -18,7 +19,7 @@ type stockMutationRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewStockMutationRepositoryPostgres(db *sql.DB) stockMutationRepositoryPostgres {
+func NewStockMutationRepositoryPostgres(db *pgxpool.Pool) stockMutationRepositoryPostgres {
 	return stockMutationRepositoryPostgres{
 		db: db,
 	}
@@ -42,11 +43,11 @@ func (r *stockMutationRepositoryPostgres) GetPossibleStockMutation(ctx context.C
 	lockQuery := query + database.GetTwoClosestAvailableStockLock
 	listQuery := query + database.GetTwoClosestAvailableStockList
 
-	_, err := r.db.ExecContext(ctx, lockQuery, args...)
+	_, err := r.db.Exec(ctx, lockQuery, args...)
 	if err != nil {
 		return alternatives, err
 	}
-	rows, err := r.db.QueryContext(ctx, listQuery, args...)
+	rows, err := r.db.Query(ctx, listQuery, args...)
 	if err != nil {
 		return alternatives, err
 	}
@@ -82,7 +83,7 @@ func (r *stockMutationRepositoryPostgres) PostStockMutations(ctx context.Context
 		}
 	}
 	
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}

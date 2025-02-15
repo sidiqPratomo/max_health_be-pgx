@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -19,7 +20,7 @@ type pharmacyCourierRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewPharmacyCourierRepositoryPostgres(db *sql.DB) pharmacyCourierRepositoryPostgres {
+func NewPharmacyCourierRepositoryPostgres(db *pgxpool.Pool) pharmacyCourierRepositoryPostgres {
 	return pharmacyCourierRepositoryPostgres{
 		db: db,
 	}
@@ -38,7 +39,7 @@ func (r *pharmacyCourierRepositoryPostgres) CreateBulk(ctx context.Context, phar
 			query += `,`
 		}
 	}
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -46,7 +47,7 @@ func (r *pharmacyCourierRepositoryPostgres) CreateBulk(ctx context.Context, phar
 }
 
 func (r *pharmacyCourierRepositoryPostgres) UpdateOneById(ctx context.Context, pharmacyCourier entity.PharmacyCourier) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateOnePharmacyCourier, pharmacyCourier.IsActive, pharmacyCourier.Id)
+	_, err := r.db.Exec(ctx, database.UpdateOnePharmacyCourier, pharmacyCourier.IsActive, pharmacyCourier.Id)
 	if err != nil {
 		return err
 	}
@@ -55,7 +56,7 @@ func (r *pharmacyCourierRepositoryPostgres) UpdateOneById(ctx context.Context, p
 }
 
 func (r *pharmacyCourierRepositoryPostgres) DeleteBulkByPharmacyId(ctx context.Context, pharmacyId int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteBulkPharmacyCourierByPharmacyId, pharmacyId)
+	_, err := r.db.Exec(ctx, database.DeleteBulkPharmacyCourierByPharmacyId, pharmacyId)
 	if err != nil {
 		return err
 	}

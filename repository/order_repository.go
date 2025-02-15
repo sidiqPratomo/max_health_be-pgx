@@ -2,10 +2,11 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"strconv"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 	"github.com/sidiqPratomo/max-health-backend/util"
@@ -26,7 +27,7 @@ type orderRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewOrderRepositoryPostgres(db *sql.DB) orderRepositoryPostgres {
+func NewOrderRepositoryPostgres(db *pgxpool.Pool) orderRepositoryPostgres {
 	return orderRepositoryPostgres{
 		db: db,
 	}
@@ -35,7 +36,7 @@ func NewOrderRepositoryPostgres(db *sql.DB) orderRepositoryPostgres {
 func (r *orderRepositoryPostgres) PostOneOrder(ctx context.Context, userId int64, address string, amount int) (int64, error) {
 	query := database.CreateOneOrder
 	var orderId int64
-	err := r.db.QueryRowContext(ctx, query, userId, address, amount).Scan(&orderId)
+	err := r.db.QueryRow(ctx, query, userId, address, amount).Scan(&orderId)
 	if err != nil {
 		return 0, err
 	}
@@ -44,7 +45,7 @@ func (r *orderRepositoryPostgres) PostOneOrder(ctx context.Context, userId int64
 }
 
 func (r *orderRepositoryPostgres) FindAllPendingByUserId(ctx context.Context, userId int64, validatedGetOrderQuery util.ValidatedGetOrderQuery) ([]int64, *entity.PageInfo, error) {
-	rows, err := r.db.QueryContext(ctx, database.FindAllPendingOrdersByUserId, userId, validatedGetOrderQuery.Limit, validatedGetOrderQuery.Limit*(validatedGetOrderQuery.Page-1))
+	rows, err := r.db.Query(ctx, database.FindAllPendingOrdersByUserId, userId, validatedGetOrderQuery.Limit, validatedGetOrderQuery.Limit*(validatedGetOrderQuery.Page-1))
 	if err != nil {
 		return []int64{}, nil, err
 	}
@@ -98,7 +99,7 @@ func (r *orderRepositoryPostgres) FindAllPendingWithDetailsByUserId(ctx context.
 		}
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return []*entity.Order{}, err
 	}
@@ -157,7 +158,7 @@ func (r *orderRepositoryPostgres) FindAll(ctx context.Context, validatedGetOrder
 	query += ` OFFSET $` + strconv.Itoa(len(args)+1)
 	args = append(args, (validatedGetOrderQuery.Limit * (validatedGetOrderQuery.Page - 1)))
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return []int64{}, nil, err
 	}
@@ -210,7 +211,7 @@ func (r *orderRepositoryPostgres) FindAllWithDetails(ctx context.Context, orderI
 		}
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return []*entity.Order{}, err
 	}
@@ -257,7 +258,7 @@ func (r *orderRepositoryPostgres) FindAllWithDetails(ctx context.Context, orderI
 }
 
 func (r *orderRepositoryPostgres) UpdatePaymentProofOne(ctx context.Context, order *entity.Order) error {
-	_, err := r.db.ExecContext(ctx, database.UpdatePaymentProofOneOrder, order.PaymentProof, order.Id)
+	_, err := r.db.Exec(ctx, database.UpdatePaymentProofOneOrder, order.PaymentProof, order.Id)
 	if err != nil {
 		return err
 	}
@@ -267,7 +268,7 @@ func (r *orderRepositoryPostgres) UpdatePaymentProofOne(ctx context.Context, ord
 
 func (r *orderRepositoryPostgres) FindOneOrderByOrderId(ctx context.Context, orderId int64) (*entity.Order, error) {
 	var order entity.Order
-	err := r.db.QueryRowContext(ctx, database.GetOneOrderByOrderId, orderId).Scan(&order.Id, &order.UserId, &order.Address,
+	err := r.db.QueryRow(ctx, database.GetOneOrderByOrderId, orderId).Scan(&order.Id, &order.UserId, &order.Address,
 		&order.PaymentProof, &order.TotalAmount, &order.ExpiredAt)
 	if err != nil {
 		return nil, err

@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -16,14 +16,14 @@ type doctorSpecializationRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewDoctorSpecializationRepositoryPostgres(db *sql.DB) doctorSpecializationRepositoryPostgres {
+func NewDoctorSpecializationRepositoryPostgres(db *pgxpool.Pool) doctorSpecializationRepositoryPostgres {
 	return doctorSpecializationRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *doctorSpecializationRepositoryPostgres) GetAllDoctorSpecialization(ctx context.Context) ([]entity.DoctorSpecialization, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetAllDoctorSpecializationQuery)
+	rows, err := r.db.Query(ctx, database.GetAllDoctorSpecializationQuery)
 	if err != nil {
 		return nil, err
 	}

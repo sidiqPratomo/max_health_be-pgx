@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -23,7 +24,7 @@ type userAddressRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewUserAddressRepositoryPostgres(db *sql.DB) userAddressRepositoryPostgres {
+func NewUserAddressRepositoryPostgres(db *pgxpool.Pool) userAddressRepositoryPostgres {
 	return userAddressRepositoryPostgres{
 		db: db,
 	}
@@ -32,7 +33,7 @@ func NewUserAddressRepositoryPostgres(db *sql.DB) userAddressRepositoryPostgres 
 func (r *userAddressRepositoryPostgres) GetOneUserAddressByAddressId(ctx context.Context, addressId int64) (*entity.UserAddress, error) {
 	var userAddress entity.UserAddress
 
-	err := r.db.QueryRowContext(ctx, database.GetOneUserAddressByAddressIdQuery, addressId).Scan(&userAddress.UserId, &userAddress.Province.Id, &userAddress.City.Id, &userAddress.District.Id, &userAddress.Subdistrict.Id, &userAddress.Latitude, &userAddress.Longitude, &userAddress.Label, &userAddress.Address, &userAddress.IsActive, &userAddress.IsMain)
+	err := r.db.QueryRow(ctx, database.GetOneUserAddressByAddressIdQuery, addressId).Scan(&userAddress.UserId, &userAddress.Province.Id, &userAddress.City.Id, &userAddress.District.Id, &userAddress.Subdistrict.Id, &userAddress.Latitude, &userAddress.Longitude, &userAddress.Label, &userAddress.Address, &userAddress.IsActive, &userAddress.IsMain)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -45,7 +46,7 @@ func (r *userAddressRepositoryPostgres) GetOneUserAddressByAddressId(ctx context
 }
 
 func (r *userAddressRepositoryPostgres) SetAllIsMainFalse(ctx context.Context, userId int64) error {
-	_, err := r.db.ExecContext(ctx, database.SetAllIsMainFalseQuery, userId)
+	_, err := r.db.Exec(ctx, database.SetAllIsMainFalseQuery, userId)
 	if err != nil {
 		return err
 	}
@@ -56,7 +57,7 @@ func (r *userAddressRepositoryPostgres) SetAllIsMainFalse(ctx context.Context, u
 func (r *userAddressRepositoryPostgres) PostOneUserAddress(ctx context.Context, userAddress entity.UserAddress) error {
 	floatLatitude, _ := strconv.ParseFloat(userAddress.Latitude, 32)
 	floatLongitude, _ := strconv.ParseFloat(userAddress.Longitude, 32)
-	_, err := r.db.ExecContext(ctx, database.PostOneUserAddressQuery, userAddress.UserId, userAddress.Province.Id, userAddress.City.Id, userAddress.District.Id, userAddress.Subdistrict.Id, userAddress.Latitude, userAddress.Longitude, userAddress.Label, userAddress.Address, userAddress.IsMain, floatLongitude, floatLatitude)
+	_, err := r.db.Exec(ctx, database.PostOneUserAddressQuery, userAddress.UserId, userAddress.Province.Id, userAddress.City.Id, userAddress.District.Id, userAddress.Subdistrict.Id, userAddress.Latitude, userAddress.Longitude, userAddress.Label, userAddress.Address, userAddress.IsMain, floatLongitude, floatLatitude)
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func (r *userAddressRepositoryPostgres) UpdateOneUserAddress(ctx context.Context
 	floatLatitude, _ := strconv.ParseFloat(userAddress.Latitude, 32)
 	floatLongitude, _ := strconv.ParseFloat(userAddress.Longitude, 32)
 
-	_, err := r.db.ExecContext(ctx, database.UpdateUserAddressQuery, userAddress.Province.Id, userAddress.City.Id, userAddress.District.Id, userAddress.Subdistrict.Id, userAddress.Latitude, userAddress.Longitude, userAddress.Label, userAddress.Address, userAddress.IsActive, userAddress.IsMain, floatLongitude, floatLatitude, userAddress.Id)
+	_, err := r.db.Exec(ctx, database.UpdateUserAddressQuery, userAddress.Province.Id, userAddress.City.Id, userAddress.District.Id, userAddress.Subdistrict.Id, userAddress.Latitude, userAddress.Longitude, userAddress.Label, userAddress.Address, userAddress.IsActive, userAddress.IsMain, floatLongitude, floatLatitude, userAddress.Id)
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func (r *userAddressRepositoryPostgres) UpdateOneUserAddress(ctx context.Context
 func (r *userAddressRepositoryPostgres) FindAllByUserId(ctx context.Context, userId int64) ([]entity.UserAddress, error) {
 	query := database.FindAllUserAddressByUserIdQuery
 
-	rows, err := r.db.QueryContext(ctx, query, userId)
+	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,7 @@ func (r *userAddressRepositoryPostgres) FindAllByUserId(ctx context.Context, use
 }
 
 func (r *userAddressRepositoryPostgres) DeleteOneUserAddress(ctx context.Context, userAddressId int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteOneUserAddressQuery, userAddressId)
+	_, err := r.db.Exec(ctx, database.DeleteOneUserAddressQuery, userAddressId)
 	if err != nil {
 		return err
 	}
@@ -136,7 +137,7 @@ func (r *userAddressRepositoryPostgres) DeleteOneUserAddress(ctx context.Context
 func (r *userAddressRepositoryPostgres) FindOneUserAddressById(ctx context.Context, userAddressId int64) (*int64, error) {
 	var userId int64
 
-	err := r.db.QueryRowContext(ctx, database.GetOneUserAddressById, userAddressId).Scan(&userId)
+	err := r.db.QueryRow(ctx, database.GetOneUserAddressById, userAddressId).Scan(&userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil

@@ -2,20 +2,56 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// type DBTX interface {
+// 	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+// 	PrepareContext(context.Context, string) (*sql.Stmt, error)
+// 	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
+// 	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
+// }
 type DBTX interface {
-	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
-	PrepareContext(context.Context, string) (*sql.Stmt, error)
-	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
-	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
+	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error) 
+	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...interface{}) pgx.Row
 }
+
+// type Transaction interface {
+// 	Rollback() error
+// 	Commit() error
+// 	BeginTx() (Transaction, error)
+// 	AccountRepository() AccountRepository
+// 	UserRepository() UserRepository
+// 	DoctorRepository() DoctorRepository
+// 	VerificationCodeRepository() VerificationCodeRepository
+// 	RefreshTokenRepository() RefreshTokenRepository
+// 	UserAddressRepository() UserAddressRepository
+// 	ResetPasswordTokenRepository() ResetPasswordTokenRepository
+// 	PharmacyManagerRepository() PharmacyManagerRepository
+// 	AddressRepository() AddressRepository
+// 	PrescriptionRepository() PrescriptionRepository
+// 	PrescriptionDrugRepository() PrescriptionDrugRepository
+// 	ChatRepository() ChatRepository
+// 	OrderRepository() OrderRepository
+// 	OrderPharmacyRepository() OrderPharmacyRepository
+// 	OrderItemRepository() OrderItemRepository
+// 	CartRepository() CartRepository
+// 	PharmacyDrugRepo() PharmacyDrugRepository
+// 	StockChangeRepo() StockChangeRepository
+// 	StockMutationRepo() StockMutationRepository
+// 	PharmacyRepository() PharmacyRepository
+// 	PharmacyOperationalRepository() PharmacyOperationalRepository
+// 	PharmacyCourierRepository() PharmacyCourierRepository
+// }
 
 type Transaction interface {
 	Rollback() error
 	Commit() error
-	BeginTx() (Transaction, error)
+	BeginTx(ctx context.Context) (Transaction, error)
 	AccountRepository() AccountRepository
 	UserRepository() UserRepository
 	DoctorRepository() DoctorRepository
@@ -41,27 +77,53 @@ type Transaction interface {
 }
 
 type SqlTransaction struct {
-	db *sql.DB
-	tx *sql.Tx
+	db *pgxpool.Pool
+	tx pgx.Tx
 }
 
-func NewSqlTransaction(db *sql.DB) *SqlTransaction {
+// func NewSqlTransaction(db *sql.DB) *SqlTransaction {
+// 	return &SqlTransaction{
+// 		db: db,
+// 	}
+// }
+
+// NewSqlTransaction membuat instance SqlTransaction dengan pgxpool
+func NewSqlTransaction(db *pgxpool.Pool) *SqlTransaction {
 	return &SqlTransaction{
 		db: db,
 	}
 }
 
-func (s *SqlTransaction) BeginTx() (Transaction, error) {
-	tx, err := s.db.Begin()
-	return &SqlTransaction{db: s.db, tx: tx}, err
+// func (s *SqlTransaction) BeginTx() (Transaction, error) {
+// 	tx, err := s.db.Begin()
+// 	return &SqlTransaction{db: s.db, tx: tx}, err
+// }
+
+// func (s *SqlTransaction) Rollback() error {
+// 	return s.tx.Rollback()
+// }
+
+// func (s *SqlTransaction) Commit() error {
+// 	return s.tx.Commit()
+// }
+
+// BeginTx memulai transaksi baru
+func (s *SqlTransaction) BeginTx(ctx context.Context) (Transaction, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &SqlTransaction{db: s.db, tx: tx}, nil
 }
 
+// Rollback membatalkan transaksi
 func (s *SqlTransaction) Rollback() error {
-	return s.tx.Rollback()
+	return s.tx.Rollback(context.Background())
 }
 
+// Commit menyelesaikan transaksi
 func (s *SqlTransaction) Commit() error {
-	return s.tx.Commit()
+	return s.tx.Commit(context.Background())
 }
 
 func (s *SqlTransaction) AccountRepository() AccountRepository {

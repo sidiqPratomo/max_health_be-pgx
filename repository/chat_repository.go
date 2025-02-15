@@ -2,8 +2,9 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -17,7 +18,7 @@ type chatRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewChatRepositoryPostgres(db *sql.DB) chatRepositoryPostgres {
+func NewChatRepositoryPostgres(db *pgxpool.Pool) chatRepositoryPostgres {
 	return chatRepositoryPostgres{
 		db: db,
 	}
@@ -27,7 +28,7 @@ func (r *chatRepositoryPostgres) PostOneChat(ctx context.Context, chatRequest en
 	var chatId int64
 	var createdAt string
 
-	err := r.db.QueryRowContext(ctx, database.PostOneChatQuery, chatRequest.RoomId, chatRequest.SenderAccountId, chatRequest.Message, chatRequest.Attachment.Format, chatRequest.Attachment.Url, chatRequest.Prescription.Id).Scan(&chatId, &createdAt)
+	err := r.db.QueryRow(ctx, database.PostOneChatQuery, chatRequest.RoomId, chatRequest.SenderAccountId, chatRequest.Message, chatRequest.Attachment.Format, chatRequest.Attachment.Url, chatRequest.Prescription.Id).Scan(&chatId, &createdAt)
 	if err != nil {
 		return nil, "", err
 	}
@@ -36,7 +37,7 @@ func (r *chatRepositoryPostgres) PostOneChat(ctx context.Context, chatRequest en
 }
 
 func (r *chatRepositoryPostgres) GetAllChat(ctx context.Context, roomId int64) ([]entity.Chat, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetAllChatQuery, roomId)
+	rows, err := r.db.Query(ctx, database.GetAllChatQuery, roomId)
 	if err != nil {
 		return nil, err
 	}

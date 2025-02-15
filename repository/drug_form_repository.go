@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -17,7 +19,7 @@ type drugFormRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewDrugFormRepositoryPostgres(db *sql.DB) drugFormRepositoryPostgres {
+func NewDrugFormRepositoryPostgres(db *pgxpool.Pool) drugFormRepositoryPostgres {
 	return drugFormRepositoryPostgres{
 		db: db,
 	}
@@ -26,8 +28,8 @@ func NewDrugFormRepositoryPostgres(db *sql.DB) drugFormRepositoryPostgres {
 func (r *drugFormRepositoryPostgres) FindOneById(ctx context.Context, id int64) (*entity.DrugForm, error) {
 	var drugForm entity.DrugForm
 
-	if err := r.db.QueryRowContext(ctx, database.GetOneDrugFormById, id).Scan(&drugForm.Id, &drugForm.Name); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, database.GetOneDrugFormById, id).Scan(&drugForm.Id, &drugForm.Name); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -38,7 +40,7 @@ func (r *drugFormRepositoryPostgres) FindOneById(ctx context.Context, id int64) 
 }
 
 func (r *drugFormRepositoryPostgres) GetAllDrugForm(ctx context.Context) ([]entity.DrugForm, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetAllDrugFormQuery)
+	rows, err := r.db.Query(ctx, database.GetAllDrugFormQuery)
 	if err != nil {
 		return nil, err
 	}

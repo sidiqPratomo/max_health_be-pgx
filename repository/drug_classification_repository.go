@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -17,14 +19,14 @@ type drugClassificationRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewDrugClassificationRepositoryPostgres(db *sql.DB) drugClassificationRepositoryPostgres {
+func NewDrugClassificationRepositoryPostgres(db *pgxpool.Pool) drugClassificationRepositoryPostgres {
 	return drugClassificationRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *drugClassificationRepositoryPostgres) GetAllDrugClassification(ctx context.Context) ([]entity.DrugClassification, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetAllDrugClassificationQuery)
+	rows, err := r.db.Query(ctx, database.GetAllDrugClassificationQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +55,8 @@ func (r *drugClassificationRepositoryPostgres) GetAllDrugClassification(ctx cont
 func (r *drugClassificationRepositoryPostgres) FindOneById(ctx context.Context, id int64) (*entity.DrugClassification, error) {
 	var classification entity.DrugClassification
 
-	if err := r.db.QueryRowContext(ctx, database.GetOneDrugClassficationById, id).Scan(&classification.Id, &classification.Name); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, database.GetOneDrugClassficationById, id).Scan(&classification.Id, &classification.Name); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 

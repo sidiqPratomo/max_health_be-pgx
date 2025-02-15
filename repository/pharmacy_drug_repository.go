@@ -2,13 +2,15 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 	"github.com/sidiqPratomo/max-health-backend/util"
-	"github.com/shopspring/decimal"
 )
 
 type PharmacyDrugRepository interface {
@@ -33,14 +35,14 @@ type pharmacyDrugRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewDrugPharmacyRepositoryPostgres(db *sql.DB) pharmacyDrugRepositoryPostgres {
+func NewDrugPharmacyRepositoryPostgres(db *pgxpool.Pool) pharmacyDrugRepositoryPostgres {
 	return pharmacyDrugRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *pharmacyDrugRepositoryPostgres) GetPharmacyDrugsByDrugId(ctx context.Context, drugId int64, latitude, longitude float64, limit, offset int) ([]entity.PharmacyDrug, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetPharmacyDrugByDrugIdQuery, drugId, longitude, latitude, limit, offset)
+	rows, err := r.db.Query(ctx, database.GetPharmacyDrugByDrugIdQuery, drugId, longitude, latitude, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +77,9 @@ func (r *pharmacyDrugRepositoryPostgres) GetPharmacyDrugsByDrugId(ctx context.Co
 
 func (r *pharmacyDrugRepositoryPostgres) GetPharmacyDrugById(ctx context.Context, pharmacyDrugId int64) (*entity.PharmacyDrugDetail, error) {
 	pharmacyDrug := entity.PharmacyDrugDetail{}
-	err := r.db.QueryRowContext(ctx, database.GetPharmacyDrugById, pharmacyDrugId).Scan(&pharmacyDrug.Id, &pharmacyDrug.PharmacyId, &pharmacyDrug.DrugId, &pharmacyDrug.Price, &pharmacyDrug.Stock)
+	err := r.db.QueryRow(ctx, database.GetPharmacyDrugById, pharmacyDrugId).Scan(&pharmacyDrug.Id, &pharmacyDrug.PharmacyId, &pharmacyDrug.DrugId, &pharmacyDrug.Price, &pharmacyDrug.Stock)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -124,7 +126,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetProductListing(ctx context.Context, 
 
 	sql2 += database.GetProductCountQuery
 
-	rows2, err := r.db.QueryContext(ctx, sql2, args...)
+	rows2, err := r.db.Query(ctx, sql2, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -158,7 +160,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetProductListing(ctx context.Context, 
 	sql1 += ` OFFSET $` + strconv.Itoa(len(args)+1)
 	args = append(args, (query.Limit * (query.Page - 1)))
 
-	rows1, err := r.db.QueryContext(ctx, sql1, args...)
+	rows1, err := r.db.Query(ctx, sql1, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -190,7 +192,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetPharmacyDrugsByCartForUpdate(ctx con
 		}
 	}
 	query += ` FOR UPDATE`
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -214,7 +216,7 @@ func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugsByCartId(ctx context
 	query += `)`
 	query += `RETURNING ci.cart_item_id, pd.pharmacy_drug_id, pd.stock`
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return pharmacyDrugs, err
 	}
@@ -240,7 +242,7 @@ func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugsForStockMutation(ctx
 		}
 	}
 	query += database.UpdatePharmacyDrugsFromStockMutation2
-	_, err := r.db.ExecContext(ctx, query)
+	_, err := r.db.Exec(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -249,9 +251,9 @@ func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugsForStockMutation(ctx
 
 func (r *pharmacyDrugRepositoryPostgres) GetPharmacyDrugByPharmacyId(ctx context.Context, pharmacyId int64) ([]entity.PharmacyDrugDetail, error) {
 	pharmaciesDrug := []entity.PharmacyDrugDetail{}
-	rows, err := r.db.QueryContext(ctx, database.GetPharmacyDrugByPharmacyId, pharmacyId)
+	rows, err := r.db.Query(ctx, database.GetPharmacyDrugByPharmacyId, pharmacyId)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -276,7 +278,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetNearestAvailablePharmacyDrugByDrugId
 	var pharmacy entity.Pharmacy
 	var drugQuantity entity.DrugQuantity
 
-	err := r.db.QueryRowContext(ctx, database.GetNearestAvailablePharmacyDrugByDrugIdQuery, drugId, userAddressId).Scan(
+	err := r.db.QueryRow(ctx, database.GetNearestAvailablePharmacyDrugByDrugIdQuery, drugId, userAddressId).Scan(
 		&pharmacy.Id,
 		&pharmacy.Name,
 		&pharmacy.Address,
@@ -292,7 +294,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetNearestAvailablePharmacyDrugByDrugId
 		&drugQuantity.PharmacyDrug.Price,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil, nil
 		}
 
@@ -305,7 +307,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetNearestAvailablePharmacyDrugByDrugId
 func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugsByOrderPharmacyId(ctx context.Context, orderPharmacyId int64) ([]entity.StockChange, error) {
 	stockChanges := []entity.StockChange{}
 	query := database.GetPharmacyDrugsByOrderPharmacyId + database.UpdatePharmacyDrugsByOrderPharmacyId
-	rows, err := r.db.QueryContext(ctx, query, orderPharmacyId)
+	rows, err := r.db.Query(ctx, query, orderPharmacyId)
 	if err != nil {
 		return stockChanges, err
 	}
@@ -325,7 +327,7 @@ func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugsByOrderPharmacyId(ct
 func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugsByOrderId(ctx context.Context, orderId int64) ([]entity.StockChange, error) {
 	stockChanges := []entity.StockChange{}
 	query := database.GetPharmacyDrugsByOrderId + database.UpdatePharmacyDrugsByOrderPharmacyId
-	rows, err := r.db.QueryContext(ctx, query, orderId)
+	rows, err := r.db.Query(ctx, query, orderId)
 	if err != nil {
 		return stockChanges, err
 	}
@@ -345,7 +347,7 @@ func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugsByOrderId(ctx contex
 func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugStockPrice(ctx context.Context, pharmacyDrugId int64, stock int, Price decimal.Decimal) error {
 	query := database.UpdatePharmacyDrugStockPrice
 
-	_, err := r.db.ExecContext(ctx, query, pharmacyDrugId, stock, Price)
+	_, err := r.db.Exec(ctx, query, pharmacyDrugId, stock, Price)
 	if err != nil {
 		return err
 	}
@@ -355,7 +357,7 @@ func (r *pharmacyDrugRepositoryPostgres) UpdatePharmacyDrugStockPrice(ctx contex
 func (r *pharmacyDrugRepositoryPostgres) DeletePharmacyDrug(ctx context.Context, pharmacyDrugId int64) error {
 	query := database.DeletePharmacyDrug
 
-	_, err := r.db.ExecContext(ctx, query, pharmacyDrugId)
+	_, err := r.db.Exec(ctx, query, pharmacyDrugId)
 	if err != nil {
 		return err
 	}
@@ -365,7 +367,7 @@ func (r *pharmacyDrugRepositoryPostgres) DeletePharmacyDrug(ctx context.Context,
 func (r *pharmacyDrugRepositoryPostgres) AddPharmacyDrug(ctx context.Context, pharmacyId int64, drugId int64, stock int, price decimal.Decimal) error {
 	query := database.AddPharmacyDrug
 
-	_, err := r.db.ExecContext(ctx, query, pharmacyId, drugId, stock, price)
+	_, err := r.db.Exec(ctx, query, pharmacyId, drugId, stock, price)
 	if err != nil {
 		return err
 	}
@@ -376,7 +378,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetPossibleStockMutation(ctx context.Co
 	query := database.GetPossibleStockMutation
 	pharmacyDrugs := []entity.PharmacyDrugDetail{}
 
-	rows, err := r.db.QueryContext(ctx, query, pharmacyDrugId)
+	rows, err := r.db.Query(ctx, query, pharmacyDrugId)
 	if err != nil {
 		return pharmacyDrugs, err
 	}
@@ -393,9 +395,9 @@ func (r *pharmacyDrugRepositoryPostgres) GetPossibleStockMutation(ctx context.Co
 
 func (r *pharmacyDrugRepositoryPostgres) GetPharmacyDrugByIdForUpdate(ctx context.Context, pharmacyDrugId int64) (*entity.PharmacyDrugDetail, error) {
 	pharmacyDrug := entity.PharmacyDrugDetail{}
-	err := r.db.QueryRowContext(ctx, database.GetPharmacyDrugById, pharmacyDrugId).Scan(&pharmacyDrug.Id, &pharmacyDrug.PharmacyId, &pharmacyDrug.DrugId, &pharmacyDrug.Price, &pharmacyDrug.Stock)
+	err := r.db.QueryRow(ctx, database.GetPharmacyDrugById, pharmacyDrugId).Scan(&pharmacyDrug.Id, &pharmacyDrug.PharmacyId, &pharmacyDrug.DrugId, &pharmacyDrug.Price, &pharmacyDrug.Stock)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 

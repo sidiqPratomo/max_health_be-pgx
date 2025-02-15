@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -16,7 +17,7 @@ type courierRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewCourierRepositoryPostgres(db *sql.DB) courierRepositoryPostgres {
+func NewCourierRepositoryPostgres(db *pgxpool.Pool) courierRepositoryPostgres {
 	return courierRepositoryPostgres{
 		db: db,
 	}
@@ -25,7 +26,7 @@ func NewCourierRepositoryPostgres(db *sql.DB) courierRepositoryPostgres {
 func (r *courierRepositoryPostgres) FindAll(ctx context.Context) ([]entity.Courier, error) {
 	couriers := []entity.Courier{}
 
-	rows, err := r.db.QueryContext(ctx, database.GetCouriers)
+	rows, err := r.db.Query(ctx, database.GetCouriers)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, err

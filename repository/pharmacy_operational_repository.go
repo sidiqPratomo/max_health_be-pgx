@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -19,7 +20,7 @@ type pharmacyOperationalRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewPharmacyOperationalRepositoryPostgres(db *sql.DB) pharmacyOperationalRepositoryPostgres {
+func NewPharmacyOperationalRepositoryPostgres(db *pgxpool.Pool) pharmacyOperationalRepositoryPostgres {
 	return pharmacyOperationalRepositoryPostgres{
 		db: db,
 	}
@@ -37,7 +38,7 @@ func (r *pharmacyOperationalRepositoryPostgres) CreateBulk(ctx context.Context, 
 			query += `,`
 		}
 	}
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func (r *pharmacyOperationalRepositoryPostgres) CreateBulk(ctx context.Context, 
 }
 
 func (r *pharmacyOperationalRepositoryPostgres) UpdateOneById(ctx context.Context, pharmacyOperational entity.PharmacyOperational) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateOnePharmacyOperational, pharmacyOperational.OperationalDay, pharmacyOperational.OpenHour, pharmacyOperational.CloseHour, pharmacyOperational.IsOpen, pharmacyOperational.Id)
+	_, err := r.db.Exec(ctx, database.UpdateOnePharmacyOperational, pharmacyOperational.OperationalDay, pharmacyOperational.OpenHour, pharmacyOperational.CloseHour, pharmacyOperational.IsOpen, pharmacyOperational.Id)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (r *pharmacyOperationalRepositoryPostgres) UpdateOneById(ctx context.Contex
 }
 
 func (r *pharmacyOperationalRepositoryPostgres) DeleteBulkByPharmacyId(ctx context.Context, pharmacyId int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteBulkPharmacyOperationalByPharmacyId, pharmacyId)
+	_, err := r.db.Exec(ctx, database.DeleteBulkPharmacyOperationalByPharmacyId, pharmacyId)
 	if err != nil {
 		return err
 	}

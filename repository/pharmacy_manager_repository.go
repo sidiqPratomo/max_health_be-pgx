@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -21,14 +22,14 @@ type pharmacyManagerRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewpharmacyManagerRepositoryPostgres(db *sql.DB) pharmacyManagerRepositoryPostgres {
+func NewpharmacyManagerRepositoryPostgres(db *pgxpool.Pool) pharmacyManagerRepositoryPostgres {
 	return pharmacyManagerRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *pharmacyManagerRepositoryPostgres) PostOne(ctx context.Context, accountId int64) error {
-	_, err := r.db.ExecContext(ctx, database.PostOnePharmacyManagerQuery, accountId)
+	_, err := r.db.Exec(ctx, database.PostOnePharmacyManagerQuery, accountId)
 	if err != nil {
 		return err
 	}
@@ -39,7 +40,7 @@ func (r *pharmacyManagerRepositoryPostgres) PostOne(ctx context.Context, account
 func (r *pharmacyManagerRepositoryPostgres) FindAll(ctx context.Context) ([]entity.PharmacyManager, error) {
 	query := database.FindAllPharmacyManagers
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func (r *pharmacyManagerRepositoryPostgres) FindAll(ctx context.Context) ([]enti
 func (r *pharmacyManagerRepositoryPostgres) FindOneById(ctx context.Context, pharmacyManagerId int64) (*entity.PharmacyManager, error) {
 	var pharmacyManager entity.PharmacyManager
 
-	if err := r.db.QueryRowContext(ctx, database.GetOnePharmacyManagerByIdQuery, pharmacyManagerId).Scan(&pharmacyManager.Id, &pharmacyManager.Account.Id, &pharmacyManager.Account.ProfilePicture); err != nil {
+	if err := r.db.QueryRow(ctx, database.GetOnePharmacyManagerByIdQuery, pharmacyManagerId).Scan(&pharmacyManager.Id, &pharmacyManager.Account.Id, &pharmacyManager.Account.ProfilePicture); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -83,7 +84,7 @@ func (r *pharmacyManagerRepositoryPostgres) FindOneById(ctx context.Context, pha
 }
 
 func (r *pharmacyManagerRepositoryPostgres) DeleteOneById(ctx context.Context, pharmacyManagerId int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteOnePharmacyManagerByIdQuery, pharmacyManagerId)
+	_, err := r.db.Exec(ctx, database.DeleteOnePharmacyManagerByIdQuery, pharmacyManagerId)
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (r *pharmacyManagerRepositoryPostgres) DeleteOneById(ctx context.Context, p
 func (r *pharmacyManagerRepositoryPostgres) FindOneByAccountId(ctx context.Context, accountId int64) (*entity.PharmacyManager, error) {
 	var pharmacyManager entity.PharmacyManager
 
-	if err := r.db.QueryRowContext(ctx, database.GetOnePharmacyManagerByAccountIdQuery, accountId).Scan(&pharmacyManager.Id, &pharmacyManager.Account.Id, &pharmacyManager.Account.ProfilePicture); err != nil {
+	if err := r.db.QueryRow(ctx, database.GetOnePharmacyManagerByAccountIdQuery, accountId).Scan(&pharmacyManager.Id, &pharmacyManager.Account.Id, &pharmacyManager.Account.ProfilePicture); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -107,7 +108,7 @@ func (r *pharmacyManagerRepositoryPostgres) FindOneByAccountId(ctx context.Conte
 func (r *pharmacyManagerRepositoryPostgres) FindOneByPharmacyCourierId(ctx context.Context, pharmacyCourierId int64) (*entity.PharmacyManager, error) {
 	var pharmacyManager entity.PharmacyManager
 
-	if err := r.db.QueryRowContext(ctx, database.GetOnePharmacyManagerByPharmacyCourierIdQuery, pharmacyCourierId).Scan(&pharmacyManager.Id, &pharmacyManager.Account.Id, &pharmacyManager.Account.ProfilePicture); err != nil {
+	if err := r.db.QueryRow(ctx, database.GetOnePharmacyManagerByPharmacyCourierIdQuery, pharmacyCourierId).Scan(&pharmacyManager.Id, &pharmacyManager.Account.Id, &pharmacyManager.Account.ProfilePicture); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}

@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"strconv"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/dto"
 	"github.com/sidiqPratomo/max-health-backend/entity"
@@ -22,7 +23,7 @@ type stockChangeRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewStockChangeRepositoryPostgres(db *sql.DB) stockChangeRepositoryPostgres {
+func NewStockChangeRepositoryPostgres(db *pgxpool.Pool) stockChangeRepositoryPostgres {
 	return stockChangeRepositoryPostgres{
 		db: db,
 	}
@@ -43,7 +44,7 @@ func (r *stockChangeRepositoryPostgres) PostStockChangesByCartIds(ctx context.Co
 			query += `,`
 		}
 	}
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (r *stockChangeRepositoryPostgres) PostStockChangesFromMutation(ctx context
 		}
 	}
 
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -85,7 +86,7 @@ func (r *stockChangeRepositoryPostgres) PostStockChanges(ctx context.Context, st
 		args = append(args, stockChange.Amount)
 		args = append(args, "transfer from cancelled order")
 	}
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func (r *stockChangeRepositoryPostgres) PostStockChangesFromUpdate(ctx context.C
 		args = append(args, stockChange.Amount)
 		args = append(args, stockChange.Description)
 	}
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func (r *stockChangeRepositoryPostgres) GetStockChanges(ctx context.Context, man
 		args = append(args, *pharmacyId)
 	}
 	query += `ORDER BY sc.created_at`
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return stockChanges, err
 	}

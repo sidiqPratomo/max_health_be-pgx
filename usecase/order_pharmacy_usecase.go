@@ -247,7 +247,7 @@ func (u *orderPharmacyUsecaseImpl) UpdateStatusToCancelled(ctx context.Context, 
 		return apperror.InvalidOrderStatusError()
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

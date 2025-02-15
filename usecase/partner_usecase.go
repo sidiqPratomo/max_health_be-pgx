@@ -84,7 +84,7 @@ func (u *partnerUsecaseImpl) AddOnePartner(ctx context.Context, registerRequest 
 	account.RoleId = appconstant.PharmacyManagerId
 	account.ProfilePicture = imageUrl
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -188,7 +188,7 @@ func (u *partnerUsecaseImpl) DeleteOnePartner(ctx context.Context, pharmacyManag
 		util.DeleteInCloudinary(pharmacyManager.Account.ProfilePicture)
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

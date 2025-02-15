@@ -155,7 +155,7 @@ func (u *telemedicineUsecaseImpl) PostOneMessage(ctx context.Context, accountId 
 
 	chat.RoomId = chatRoom.Id
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return nil, apperror.InternalServerError(err)
 	}
@@ -606,7 +606,7 @@ func (u *telemedicineUsecaseImpl) CheckoutFromPrescription(ctx context.Context, 
 		return nil, apperror.PrescriptionHasBeenUsedError()
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return nil, apperror.InternalServerError(err)
 	}

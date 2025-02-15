@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/pgx"
 	"math"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 	"github.com/sidiqPratomo/max-health-backend/util"
@@ -28,7 +30,7 @@ type cartRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewCartRepositoryPostgres(db *sql.DB) cartRepositoryPostgres {
+func NewCartRepositoryPostgres(db *pgxpool.Pool) cartRepositoryPostgres {
 	return cartRepositoryPostgres{
 		db: db,
 	}
@@ -36,16 +38,16 @@ func NewCartRepositoryPostgres(db *sql.DB) cartRepositoryPostgres {
 
 func (r *cartRepositoryPostgres) PostOneCart(ctx context.Context, accountID int64, pharmacyDrugId int64, quantity int) (*int64, error) {
 	var userID string
-	err := r.db.QueryRowContext(ctx, database.CheckUserQuery, accountID).Scan(&userID)
+	err := r.db.QueryRow(ctx, database.CheckUserQuery, accountID).Scan(&userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
 
 	var cartItemId *int64
-	err = r.db.QueryRowContext(ctx, database.PostOneCartQuery, userID, pharmacyDrugId, quantity).Scan(&cartItemId)
+	err = r.db.QueryRow(ctx, database.PostOneCartQuery, userID, pharmacyDrugId, quantity).Scan(&cartItemId)
 	if err != nil {
 		return nil, err
 	}
@@ -55,15 +57,15 @@ func (r *cartRepositoryPostgres) PostOneCart(ctx context.Context, accountID int6
 
 func (r *cartRepositoryPostgres) UpdateOneCart(ctx context.Context, accountID int64, cartItemID int64, quantity int) error {
 	var userID string
-	err := r.db.QueryRowContext(ctx, database.CheckUserQuery, accountID).Scan(&userID)
+	err := r.db.QueryRow(ctx, database.CheckUserQuery, accountID).Scan(&userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil
 		}
 		return err
 	}
 
-	_, err = r.db.ExecContext(ctx, database.UpdateOneCartQuery, cartItemID, userID, quantity)
+	_, err = r.db.Exec(ctx, database.UpdateOneCartQuery, cartItemID, userID, quantity)
 	if err != nil {
 		return err
 	}
@@ -73,15 +75,15 @@ func (r *cartRepositoryPostgres) UpdateOneCart(ctx context.Context, accountID in
 
 func (r *cartRepositoryPostgres) DeleteOneCart(ctx context.Context, accountID int64, cartItemID int64) error {
 	var userID string
-	err := r.db.QueryRowContext(ctx, database.CheckUserQuery, accountID).Scan(&userID)
+	err := r.db.QueryRow(ctx, database.CheckUserQuery, accountID).Scan(&userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil
 		}
 		return err
 	}
 
-	_, err = r.db.ExecContext(ctx, database.DeleteOneCartQuery, cartItemID, userID)
+	_, err = r.db.Exec(ctx, database.DeleteOneCartQuery, cartItemID, userID)
 	if err != nil {
 		return err
 	}
@@ -91,7 +93,7 @@ func (r *cartRepositoryPostgres) DeleteOneCart(ctx context.Context, accountID in
 
 func (r *cartRepositoryPostgres) GetStockByCartId(ctx context.Context, cartItemId int64) (*int, error) {
 	var stock int
-	err := r.db.QueryRowContext(ctx, database.GetStockPharmacyDrug, cartItemId).Scan(&stock)
+	err := r.db.QueryRow(ctx, database.GetStockPharmacyDrug, cartItemId).Scan(&stock)
 	if err != nil {
 		return nil, err
 	}
@@ -109,17 +111,17 @@ func (r *cartRepositoryPostgres) GetAllCart(ctx context.Context, accountID int64
 		return nil, nil, err
 	}
 
-	err = r.db.QueryRowContext(ctx, database.CheckUserQuery, accountID).Scan(&userID)
+	err = r.db.QueryRow(ctx, database.CheckUserQuery, accountID).Scan(&userID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil, nil
 		}
 		return nil, nil, err
 	}
 
-	rows, err := r.db.QueryContext(ctx, database.GetAllCartQuery, userID, intLimit, offset)
+	rows, err := r.db.Query(ctx, database.GetAllCartQuery, userID, intLimit, offset)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil, nil
 		}
 
@@ -141,7 +143,7 @@ func (r *cartRepositoryPostgres) GetAllCart(ctx context.Context, accountID int64
 		SELECT COUNT(*) 
 		FROM cart_items WHERE deleted_at ISNULL
 	`
-	countRow := r.db.QueryRowContext(ctx, countQuery)
+	countRow := r.db.QueryRow(ctx, countQuery)
 	if err := countRow.Scan(&pageInfo.ItemCount); err != nil {
 		return nil, nil, err
 	}
@@ -166,7 +168,7 @@ func (r *cartRepositoryPostgres) GetPharmacyDeliveryFeeForCart(ctx context.Conte
 	query += `)),` + database.GetAllDeliveryFee2 + strconv.Itoa(len(args)+1) + `),` + database.GetAllDeliveryFee3
 	args = append(args, userAddressId)
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -265,9 +267,9 @@ func (r *cartRepositoryPostgres) GetCartsByIds(ctx context.Context, cartItemsIds
 		}
 		query += `)`
 	}
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, err
 		}
 
@@ -303,7 +305,7 @@ func (r *cartRepositoryPostgres) GetAllCartDetailByIds(ctx context.Context, cart
 		}
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return cartItems, err
 	}
@@ -333,7 +335,7 @@ func (r *cartRepositoryPostgres) GetAllCartsForChangesByCartIds(ctx context.Cont
 		}
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return cartItemChanges, err
 	}
@@ -361,7 +363,7 @@ func (r *cartRepositoryPostgres) DeleteCarts(ctx context.Context, cartItems []en
 			query += ` OR `
 		}
 	}
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}

@@ -118,7 +118,7 @@ func (u *authenticationUsecaseImpl) RegisterDoctor(ctx context.Context, register
 	account.Password = password
 	account.RoleId = appconstant.DoctorId
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -171,7 +171,7 @@ func (u *authenticationUsecaseImpl) RegisterUser(ctx context.Context, registerRe
 	account.Password = password
 	account.RoleId = appconstant.UserId
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -241,7 +241,7 @@ func (u *authenticationUsecaseImpl) SendVerificationEmail(ctx context.Context, s
 		return apperror.InternalServerError(err)
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -309,7 +309,7 @@ func (u *authenticationUsecaseImpl) Login(ctx context.Context, account entity.Ac
 	tokens.AccessToken = *accessToken
 	tokens.RefreshToken = *refreshToken
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return nil, apperror.InternalServerError(err)
 	}
@@ -380,7 +380,7 @@ func (u *authenticationUsecaseImpl) VerifyOneAccount(ctx context.Context, verifi
 		return apperror.InternalServerError(err)
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

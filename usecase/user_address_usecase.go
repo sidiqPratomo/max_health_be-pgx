@@ -68,7 +68,7 @@ func (u *userAddressUsecaseImpl) UpdateUserAddress(ctx context.Context, accountI
 		return apperror.ForbiddenAction()
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -109,7 +109,7 @@ func (u *userAddressUsecaseImpl) AddUserAddress(ctx context.Context, accountId i
 	if user == nil {
 		return apperror.AccountNotFoundError()
 	}
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

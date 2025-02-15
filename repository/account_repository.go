@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -24,7 +26,7 @@ type accountRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewAccountRepositoryPostgres(db *sql.DB) accountRepositoryPostgres {
+func NewAccountRepositoryPostgres(db *pgxpool.Pool) accountRepositoryPostgres {
 	return accountRepositoryPostgres{
 		db: db,
 	}
@@ -32,9 +34,9 @@ func NewAccountRepositoryPostgres(db *sql.DB) accountRepositoryPostgres {
 
 func (r *accountRepositoryPostgres) FindAccountByEmail(ctx context.Context, email string) (*entity.Account, error) {
 	var account entity.Account
-	err := r.db.QueryRowContext(ctx, database.FindAccountByEmailQuery, email).Scan(&account.Id, &account.Email, &account.Password, &account.RoleId, &account.RoleName, &account.Name, &account.ProfilePicture, &account.VerifiedAt)
+	err := r.db.QueryRow(ctx, database.FindAccountByEmailQuery, email).Scan(&account.Id, &account.Email, &account.Password, &account.RoleId, &account.RoleName, &account.Name, &account.ProfilePicture, &account.VerifiedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -47,9 +49,9 @@ func (r *accountRepositoryPostgres) FindAccountByEmail(ctx context.Context, emai
 func (r *accountRepositoryPostgres) FindOnePasswordById(ctx context.Context, id int64) (*string, error) {
 	var password string
 
-	err := r.db.QueryRowContext(ctx, database.FindOneAccountPasswordByIdQuery, id).Scan(&password)
+	err := r.db.QueryRow(ctx, database.FindOneAccountPasswordByIdQuery, id).Scan(&password)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -62,9 +64,9 @@ func (r *accountRepositoryPostgres) FindOnePasswordById(ctx context.Context, id 
 func (r *accountRepositoryPostgres) FindOneById(ctx context.Context, id int64) (*entity.Account, error) {
 	var account entity.Account
 
-	err := r.db.QueryRowContext(ctx, database.FindOneAccountByIdQuery, id).Scan(&account.Name, &account.Password, &account.Email, &account.ProfilePicture)
+	err := r.db.QueryRow(ctx, database.FindOneAccountByIdQuery, id).Scan(&account.Name, &account.Password, &account.Email, &account.ProfilePicture)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -77,7 +79,7 @@ func (r *accountRepositoryPostgres) FindOneById(ctx context.Context, id int64) (
 func (r *accountRepositoryPostgres) PostOneAccount(ctx context.Context, account entity.Account) (*int, error) {
 	var accountId int
 
-	err := r.db.QueryRowContext(ctx, database.PostOneAccountQuery, account.Email, account.Password, account.RoleId, account.Name).Scan(&accountId)
+	err := r.db.QueryRow(ctx, database.PostOneAccountQuery, account.Email, account.Password, account.RoleId, account.Name).Scan(&accountId)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +90,7 @@ func (r *accountRepositoryPostgres) PostOneAccount(ctx context.Context, account 
 func (r *accountRepositoryPostgres) PostOneVerifiedAccount(ctx context.Context, account entity.Account) (*int64, error) {
 	var accountId int64
 
-	if err := r.db.QueryRowContext(ctx, database.PostOneVerifiedAccountQuery, account.Email, account.Password, account.RoleId, account.Name, account.ProfilePicture).Scan(&accountId); err != nil {
+	if err := r.db.QueryRow(ctx, database.PostOneVerifiedAccountQuery, account.Email, account.Password, account.RoleId, account.Name, account.ProfilePicture).Scan(&accountId); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +100,7 @@ func (r *accountRepositoryPostgres) PostOneVerifiedAccount(ctx context.Context, 
 func (r *accountRepositoryPostgres) UpdatePasswordOne(ctx context.Context, account *entity.Account) error {
 	query := database.QueryUpdatePasswordOneAccount
 
-	_, err := r.db.ExecContext(ctx, query, account.Password, account.Id)
+	_, err := r.db.Exec(ctx, query, account.Password, account.Id)
 	if err != nil {
 		return err
 	}
@@ -107,7 +109,7 @@ func (r *accountRepositoryPostgres) UpdatePasswordOne(ctx context.Context, accou
 }
 
 func (r *accountRepositoryPostgres) UpdateDataOne(ctx context.Context, account *entity.Account) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateDataOneAccount, account.Name, account.Password, account.ProfilePicture, account.Id)
+	_, err := r.db.Exec(ctx, database.UpdateDataOneAccount, account.Name, account.Password, account.ProfilePicture, account.Id)
 	if err != nil {
 		return err
 	}
@@ -116,7 +118,7 @@ func (r *accountRepositoryPostgres) UpdateDataOne(ctx context.Context, account *
 }
 
 func (r *accountRepositoryPostgres) UpdateNameAndProfilePictureOne(ctx context.Context, account *entity.Account) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateNameAndProfilePictureOneAccount, account.Name, account.ProfilePicture, account.Id)
+	_, err := r.db.Exec(ctx, database.UpdateNameAndProfilePictureOneAccount, account.Name, account.ProfilePicture, account.Id)
 	if err != nil {
 		return err
 	}
@@ -125,7 +127,7 @@ func (r *accountRepositoryPostgres) UpdateNameAndProfilePictureOne(ctx context.C
 }
 
 func (r *accountRepositoryPostgres) DeleteOneById(ctx context.Context, accountId int64) error {
-	_, err := r.db.ExecContext(ctx, database.DeleteOneAccountByIdQuery, accountId)
+	_, err := r.db.Exec(ctx, database.DeleteOneAccountByIdQuery, accountId)
 	if err != nil {
 		return err
 	}

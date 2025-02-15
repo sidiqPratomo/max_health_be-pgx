@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -19,14 +21,14 @@ type resetPasswordTokenRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewResetPasswordTokenRepositoryPostgres(db *sql.DB) resetPasswordTokenRepositoryPostgres {
+func NewResetPasswordTokenRepositoryPostgres(db *pgxpool.Pool) resetPasswordTokenRepositoryPostgres {
 	return resetPasswordTokenRepositoryPostgres{
 		db: db,
 	}
 }
 
 func (r *resetPasswordTokenRepositoryPostgres) InvalidateTokens(ctx context.Context, accountId int64) error {
-	_, err := r.db.ExecContext(ctx, database.InvalidateTokensQuery, accountId)
+	_, err := r.db.Exec(ctx, database.InvalidateTokensQuery, accountId)
 	if err != nil {
 		return err
 	}
@@ -35,7 +37,7 @@ func (r *resetPasswordTokenRepositoryPostgres) InvalidateTokens(ctx context.Cont
 }
 
 func (r *resetPasswordTokenRepositoryPostgres) PostOneToken(ctx context.Context, accountId int64, token string) error {
-	_, err := r.db.ExecContext(ctx, database.PostOneResetPasswordTokenQuery, accountId, token)
+	_, err := r.db.Exec(ctx, database.PostOneResetPasswordTokenQuery, accountId, token)
 	if err != nil {
 		return err
 	}
@@ -45,8 +47,8 @@ func (r *resetPasswordTokenRepositoryPostgres) PostOneToken(ctx context.Context,
 
 func (r *resetPasswordTokenRepositoryPostgres) FindOneByAccountIdAndToken(ctx context.Context, resetPasswordToken *entity.ResetPasswordToken) (*entity.ResetPasswordToken, error) {
 	query := database.SelectOneResetPasswordTokenByAccountIdAndTokenQuery
-	if err := r.db.QueryRowContext(ctx, query, resetPasswordToken.AccountId, resetPasswordToken.Token).Scan(&resetPasswordToken.Id, &resetPasswordToken.ExpiredAt); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, query, resetPasswordToken.AccountId, resetPasswordToken.Token).Scan(&resetPasswordToken.Id, &resetPasswordToken.ExpiredAt); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
@@ -58,7 +60,7 @@ func (r *resetPasswordTokenRepositoryPostgres) FindOneByAccountIdAndToken(ctx co
 func (r *resetPasswordTokenRepositoryPostgres) UpdateExpiredAtOne(ctx context.Context, resetPasswordToken *entity.ResetPasswordToken) error {
 	query := database.UpdateExpiredAtOneResetPasswordTokenQuery
 
-	_, err := r.db.ExecContext(ctx, query, resetPasswordToken.Id)
+	_, err := r.db.Exec(ctx, query, resetPasswordToken.Id)
 	if err != nil {
 		return err
 	}

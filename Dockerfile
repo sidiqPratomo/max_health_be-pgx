@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY go.mod /app
 
-RUN go env -w GOPROXY=direct
+# RUN go env -w GOPROXY=direct
+RUN go env -w GOPROXY=https://proxy.golang.org,direct
 
 RUN go mod download
 

@@ -55,7 +55,7 @@ func (u *orderUsecaseImpl) CheckoutOrder(ctx context.Context, orderCheckoutReque
 		}
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return nil, apperror.InternalServerError(err)
 	}
@@ -220,7 +220,7 @@ func (u *orderUsecaseImpl) ConfirmPayment(ctx context.Context, orderId int64, st
 		return apperror.PaymentProofIsEmptyError()
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -289,7 +289,7 @@ func (u *orderUsecaseImpl) UploadPaymentProofOrder(ctx context.Context, accountI
 		return apperror.InternalServerError(err)
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -398,7 +398,7 @@ func (u *orderUsecaseImpl) CancelOrder(ctx context.Context, accountId int64, ord
 		}
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

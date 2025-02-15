@@ -56,7 +56,7 @@ func (u *authenticationUsecaseImpl) SendResetPasswordToken(ctx context.Context, 
 		return apperror.InternalServerError(err)
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
@@ -122,7 +122,7 @@ func (u *authenticationUsecaseImpl) ResetPassword(ctx context.Context, resetPass
 		return apperror.InternalServerError(err)
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

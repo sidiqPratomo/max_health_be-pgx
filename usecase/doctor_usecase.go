@@ -105,7 +105,7 @@ func (u *doctorUsecaseImpl) UpdateData(ctx context.Context, doctor entity.Detail
 		doctor.Password = dbAccount.Password
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}

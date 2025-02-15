@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 )
@@ -22,7 +23,7 @@ type chatRoomRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewChatRoomRepositoryPostgres(db *sql.DB) chatRoomRepositoryPostgres {
+func NewChatRoomRepositoryPostgres(db *pgxpool.Pool) chatRoomRepositoryPostgres {
 	return chatRoomRepositoryPostgres{
 		db: db,
 	}
@@ -31,7 +32,7 @@ func NewChatRoomRepositoryPostgres(db *sql.DB) chatRoomRepositoryPostgres {
 func (r *chatRoomRepositoryPostgres) CreateOneRoom(ctx context.Context, userAccountId, doctorAccountId int64) (*int64, error) {
 	var chatRoomId int64
 
-	err := r.db.QueryRowContext(ctx, database.CreateOneRoomQuery, userAccountId, doctorAccountId).Scan(&chatRoomId)
+	err := r.db.QueryRow(ctx, database.CreateOneRoomQuery, userAccountId, doctorAccountId).Scan(&chatRoomId)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +41,7 @@ func (r *chatRoomRepositoryPostgres) CreateOneRoom(ctx context.Context, userAcco
 }
 
 func (r *chatRoomRepositoryPostgres) StartChat(ctx context.Context, roomId, doctorAccountId int64) error {
-	_, err := r.db.ExecContext(ctx, database.StartChatQuery, roomId, doctorAccountId)
+	_, err := r.db.Exec(ctx, database.StartChatQuery, roomId, doctorAccountId)
 	if err != nil {
 		return err
 	}
@@ -51,7 +52,7 @@ func (r *chatRoomRepositoryPostgres) StartChat(ctx context.Context, roomId, doct
 func (r *chatRoomRepositoryPostgres) FindActiveChatRoom(ctx context.Context, userAccountId, doctorAccountId int64) (*entity.ChatRoom, error) {
 	var chatRoom entity.ChatRoom
 
-	err := r.db.QueryRowContext(ctx, database.FindActiveChatRoomQuery, userAccountId, doctorAccountId).Scan(&chatRoom.Id, &chatRoom.UserAccountId, &chatRoom.DoctorAccountId, &chatRoom.ExpiredAt)
+	err := r.db.QueryRow(ctx, database.FindActiveChatRoomQuery, userAccountId, doctorAccountId).Scan(&chatRoom.Id, &chatRoom.UserAccountId, &chatRoom.DoctorAccountId, &chatRoom.ExpiredAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -66,7 +67,7 @@ func (r *chatRoomRepositoryPostgres) FindActiveChatRoom(ctx context.Context, use
 func (r *chatRoomRepositoryPostgres) FindChatRoomById(ctx context.Context, chatRoomId int64) (*entity.ChatRoom, error) {
 	var chatRoom entity.ChatRoom
 
-	err := r.db.QueryRowContext(ctx, database.FindChatRoomByIdQuery, chatRoomId).Scan(&chatRoom.UserAccountId, &chatRoom.DoctorAccountId, &chatRoom.ExpiredAt)
+	err := r.db.QueryRow(ctx, database.FindChatRoomByIdQuery, chatRoomId).Scan(&chatRoom.UserAccountId, &chatRoom.DoctorAccountId, &chatRoom.ExpiredAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -81,7 +82,7 @@ func (r *chatRoomRepositoryPostgres) FindChatRoomById(ctx context.Context, chatR
 }
 
 func (r *chatRoomRepositoryPostgres) GetAllChatRoomPreview(ctx context.Context, accountId int64, role string) ([]entity.ChatRoomPreview, error) {
-	rows, err := r.db.QueryContext(ctx, database.GetAllChatRoomPreviewQuery, accountId)
+	rows, err := r.db.Query(ctx, database.GetAllChatRoomPreviewQuery, accountId)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func (r *chatRoomRepositoryPostgres) GetAllChatRoomPreview(ctx context.Context, 
 }
 
 func (r *chatRoomRepositoryPostgres) DoctorGetChatRequest(ctx context.Context, accountId int64) ([]entity.ChatRoomPreview, error) {
-	rows, err := r.db.QueryContext(ctx, database.DoctorGetChatRequestQuery, accountId)
+	rows, err := r.db.Query(ctx, database.DoctorGetChatRequestQuery, accountId)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +155,7 @@ func (r *chatRoomRepositoryPostgres) DoctorGetChatRequest(ctx context.Context, a
 }
 
 func (r *chatRoomRepositoryPostgres) CloseChatRoom(ctx context.Context, roomId int64) error {
-	_, err := r.db.ExecContext(ctx, database.CloseChatRoomQuery, roomId)
+	_, err := r.db.Exec(ctx, database.CloseChatRoomQuery, roomId)
 	if err != nil {
 		return err
 	}

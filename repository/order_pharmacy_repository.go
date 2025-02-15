@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql"
 	"time"
 
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sidiqPratomo/max-health-backend/database"
 	"github.com/sidiqPratomo/max-health-backend/dto"
 	"github.com/sidiqPratomo/max-health-backend/entity"
@@ -33,7 +35,7 @@ type orderPharmacyRepositoryPostgres struct {
 	db DBTX
 }
 
-func NewOrderPharmacyRepositoryPostgres(db *sql.DB) orderPharmacyRepositoryPostgres {
+func NewOrderPharmacyRepositoryPostgres(db *pgxpool.Pool) orderPharmacyRepositoryPostgres {
 	return orderPharmacyRepositoryPostgres{
 		db: db,
 	}
@@ -52,7 +54,7 @@ func (r *orderPharmacyRepositoryPostgres) PostOrderPharmacies(ctx context.Contex
 		}
 	}
 	query += `RETURNING order_pharmacy_id`
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return orderPharmacyIds, err
 	}
@@ -74,7 +76,7 @@ func (r *orderPharmacyRepositoryPostgres) PostOrderPharmacies(ctx context.Contex
 func (r *orderPharmacyRepositoryPostgres) FindAllByOrderId(ctx context.Context, orderId int64) ([]entity.OrderPharmacy, error) {
 	query := database.FindAllOrderPharmaciesByOrderId
 
-	rows, err := r.db.QueryContext(ctx, query, orderId)
+	rows, err := r.db.Query(ctx, query, orderId)
 	if err != nil {
 		return []entity.OrderPharmacy{}, err
 	}
@@ -106,7 +108,7 @@ func (r *orderPharmacyRepositoryPostgres) FindAllByOrderId(ctx context.Context, 
 }
 
 func (r *orderPharmacyRepositoryPostgres) FindAllOngoingIdsByPharmacyId(ctx context.Context, pharmacyId int64) ([]int64, error) {
-	rows, err := r.db.QueryContext(ctx, database.FindAllOngoingOrderPharmacyIdsByPharmacyId, pharmacyId)
+	rows, err := r.db.Query(ctx, database.FindAllOngoingOrderPharmacyIdsByPharmacyId, pharmacyId)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +138,7 @@ func (r *orderPharmacyRepositoryPostgres) FindAllOngoingIdsByPharmacyId(ctx cont
 }
 
 func (r *orderPharmacyRepositoryPostgres) UpdateStatusBulkByOrderId(ctx context.Context, orderId int64, newOrderStatusId int64) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateStatusBulkOrderPharmaciesByOrderId, newOrderStatusId, orderId)
+	_, err := r.db.Exec(ctx, database.UpdateStatusBulkOrderPharmaciesByOrderId, newOrderStatusId, orderId)
 	if err != nil {
 		return err
 	}
@@ -147,8 +149,8 @@ func (r *orderPharmacyRepositoryPostgres) UpdateStatusBulkByOrderId(ctx context.
 func (r *orderPharmacyRepositoryPostgres) FindOneById(ctx context.Context, id int64) (*entity.OrderPharmacy, error) {
 	var orderPharmacy entity.OrderPharmacy
 
-	if err := r.db.QueryRowContext(ctx, database.FindOneOrderPharmacyById, id).Scan(&orderPharmacy.Id, &orderPharmacy.OrderStatusId, &orderPharmacy.SubtotalAmount, &orderPharmacy.DeliveryFee, &orderPharmacy.CreatedAt, &orderPharmacy.UpdatedAt, &orderPharmacy.PharmacyName, &orderPharmacy.CourierName, &orderPharmacy.ProfilePicture, &orderPharmacy.Address); err != nil {
-		if err == sql.ErrNoRows {
+	if err := r.db.QueryRow(ctx, database.FindOneOrderPharmacyById, id).Scan(&orderPharmacy.Id, &orderPharmacy.OrderStatusId, &orderPharmacy.SubtotalAmount, &orderPharmacy.DeliveryFee, &orderPharmacy.CreatedAt, &orderPharmacy.UpdatedAt, &orderPharmacy.PharmacyName, &orderPharmacy.CourierName, &orderPharmacy.ProfilePicture, &orderPharmacy.Address); err != nil {
+		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
 
@@ -176,7 +178,7 @@ func (r *orderPharmacyRepositoryPostgres) FindAllByOrderUserId(ctx context.Conte
 	query += ` OFFSET $` + strconv.Itoa(len(args)+1)
 	args = append(args, (validatedGetOrderQuery.Limit * (validatedGetOrderQuery.Page - 1)))
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return []entity.OrderPharmacy{}, nil, err
 	}
@@ -244,7 +246,7 @@ func (r *orderPharmacyRepositoryPostgres) FindAllIdsByPharmacyManagerId(ctx cont
 	query += ` OFFSET $` + strconv.Itoa(len(args)+1)
 	args = append(args, (validatedGetOrderQuery.Limit * (validatedGetOrderQuery.Page - 1)))
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return []int64{}, nil, err
 	}
@@ -297,7 +299,7 @@ func (r *orderPharmacyRepositoryPostgres) FindAllWithDetailsByIds(ctx context.Co
 		}
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return []*entity.OrderPharmacy{}, err
 	}
@@ -366,7 +368,7 @@ func (r *orderPharmacyRepositoryPostgres) FindAllIds(ctx context.Context, valida
 	query += ` OFFSET $` + strconv.Itoa(len(args)+1)
 	args = append(args, (validatedGetOrderQuery.Limit * (validatedGetOrderQuery.Page - 1)))
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return []int64{}, nil, err
 	}
@@ -405,7 +407,7 @@ func (r *orderPharmacyRepositoryPostgres) FindAllIds(ctx context.Context, valida
 
 func (r *orderPharmacyRepositoryPostgres) FindOneByOrderPharmacyId(ctx context.Context, orderPharmacyId int64) (*entity.OrderPharmacy, error) {
 	var orderPharmacy entity.OrderPharmacy
-	err := r.db.QueryRowContext(ctx, database.FindOrderPharmacyByOrderPharmacyId, orderPharmacyId).Scan(&orderPharmacy.Id, &orderPharmacy.UserId, &orderPharmacy.OrderId,
+	err := r.db.QueryRow(ctx, database.FindOrderPharmacyByOrderPharmacyId, orderPharmacyId).Scan(&orderPharmacy.Id, &orderPharmacy.UserId, &orderPharmacy.OrderId,
 		&orderPharmacy.OrderStatusId, &orderPharmacy.PharmacyCourierId, &orderPharmacy.SubtotalAmount, &orderPharmacy.DeliveryFee)
 	if err != nil {
 		return nil, err
@@ -415,7 +417,7 @@ func (r *orderPharmacyRepositoryPostgres) FindOneByOrderPharmacyId(ctx context.C
 }
 
 func (r *orderPharmacyRepositoryPostgres) FindCountGroupedByOrderStatusIdByPharmacyManagerId(ctx context.Context, pharmacyManagerId int64) (*entity.OrderPharmacySummary, error) {
-	rows, err := r.db.QueryContext(ctx, database.FindOrderPharmacyCountGroupedByOrderStatusIdByPharmacyManagerId, pharmacyManagerId)
+	rows, err := r.db.Query(ctx, database.FindOrderPharmacyCountGroupedByOrderStatusIdByPharmacyManagerId, pharmacyManagerId)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +460,7 @@ func (r *orderPharmacyRepositoryPostgres) FindCountGroupedByOrderStatusIdByPharm
 }
 
 func (r *orderPharmacyRepositoryPostgres) UpdateOneStatusById(ctx context.Context, orderPharmacyId int64, newOrderStatusId int64) error {
-	_, err := r.db.ExecContext(ctx, database.UpdateOneStatusById, newOrderStatusId, orderPharmacyId)
+	_, err := r.db.Exec(ctx, database.UpdateOneStatusById, newOrderStatusId, orderPharmacyId)
 	if err != nil {
 		return err
 	}

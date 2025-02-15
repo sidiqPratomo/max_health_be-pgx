@@ -97,7 +97,7 @@ func (u *userUsecaseImpl) UpdateData(ctx context.Context, user entity.DetailedUs
 		user.Password = dbAccount.Password
 	}
 
-	tx, err := u.transaction.BeginTx()
+	tx, err := u.transaction.BeginTx(ctx)
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
