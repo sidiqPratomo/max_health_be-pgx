@@ -127,6 +127,7 @@ func (r *stockChangeRepositoryPostgres) GetStockChanges(ctx context.Context, man
 	if err != nil {
 		return stockChanges, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var stockChange dto.StockChangeResponse
 		err = rows.Scan(&stockChange.PharmacyName, &stockChange.PharmacyAddress, &stockChange.DrugName, &stockChange.DrugImage, &stockChange.FinalStock, &stockChange.Change, &stockChange.Description)

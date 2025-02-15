@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/shopspring/decimal"
 	"github.com/sidiqPratomo/max-health-backend/appconstant"
 	"github.com/sidiqPratomo/max-health-backend/apperror"
 	"github.com/sidiqPratomo/max-health-backend/dto"
 	"github.com/sidiqPratomo/max-health-backend/entity"
 	"github.com/sidiqPratomo/max-health-backend/repository"
 	"github.com/sidiqPratomo/max-health-backend/util"
-	"github.com/shopspring/decimal"
 )
 
 type DrugUsecase interface {

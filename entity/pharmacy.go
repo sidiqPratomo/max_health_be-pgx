@@ -26,7 +26,7 @@ type DrugListing struct {
 	MinPrice               decimal.Decimal `json:"min_price"`
 	MaxPrice               decimal.Decimal `json:"max_price"`
 	Image                  string          `json:"image_url"`
-	IsPrescriptionRequired string          `json:"prescription_required"`
+	IsPrescriptionRequired bool          `json:"prescription_required"`
 }
 
 type PharmacyOperational struct {

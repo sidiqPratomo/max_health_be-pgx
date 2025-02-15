@@ -1,38 +1,101 @@
+# version: "3.8"
+
+# services:
+#   db:
+#     image: postgis/postgis:16-3.4
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: postgres
+#       POSTGRES_DB: max_health
+#     volumes:
+#       - ./sql/ddl.sql:/docker-entrypoint-initdb.d/001.sql
+#       - ./sql/dml.sql:/docker-entrypoint-initdb.d/002.sql
+#       - ./sql/cities-dml.sql:/docker-entrypoint-initdb.d/003.sql
+#       - ./sql/drugs-dml.sql:/docker-entrypoint-initdb.d/004.sql
+#       - ./sql/pharmacy-dml.sql:/docker-entrypoint-initdb.d/005.sql
+#       - ./sql/pharmacy-geom.sql:/docker-entrypoint-initdb.d/006.sql
+#       - ./sql/pharmacy-drugs-dml-1.sql:/docker-entrypoint-initdb.d/007.sql
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
+#       interval: 30s
+#       timeout: 10s
+#       retries: 5
+#     ports:
+#       - "5432:5432"
+
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     environment:
+#       DATABASE_URL: "host=db user=postgres password=postgres dbname=max_health port=5432 sslmode=disable TimeZone=Asia/Jakarta"
+#     ports:
+#       - "8080:8080"
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     env_file:
+#       - .env
+
+
+# version: "3.8"
+
+# services:
+#   db:
+#     image: postgis/postgis:16-3.4
+#     container_name: max_health_db
+#     restart: always
+#     environment:
+#       POSTGRES_USER: ${POSTGRES_USER}
+#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#       POSTGRES_DB: ${POSTGRES_DB}
+#     volumes:
+#       - pg_data:/var/lib/postgresql/data  # Named volume untuk persistent data
+#       - ./sql/ddl.sql:/docker-entrypoint-initdb.d/001.sql
+#       - ./sql/dml.sql:/docker-entrypoint-initdb.d/002.sql
+#       - ./sql/cities-dml.sql:/docker-entrypoint-initdb.d/003.sql
+#       - ./sql/drugs-dml.sql:/docker-entrypoint-initdb.d/004.sql
+#       - ./sql/pharmacy-dml.sql:/docker-entrypoint-initdb.d/005.sql
+#       - ./sql/pharmacy-geom.sql:/docker-entrypoint-initdb.d/006.sql
+#       - ./sql/pharmacy-drugs-dml-1.sql:/docker-entrypoint-initdb.d/007.sql
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#     ports:
+#       - "5432:5432"
+
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: max_health_app
+#     restart: always
+#     environment:
+#       DATABASE_URL: "host=db user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} port=5432 sslmode=disable TimeZone=Asia/Jakarta"
+#     ports:
+#       - "8080:8080"
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     env_file:
+#       - .env
+
+# volumes:
+#   pg_data:  # Named volume untuk menyimpan data database
+
 version: "3.8"
 
 services:
-  db:
-    image: postgis/postgis:16-3.4
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: max_health
-    volumes:
-      - ./sql/ddl.sql:/docker-entrypoint-initdb.d/001.sql
-      - ./sql/dml.sql:/docker-entrypoint-initdb.d/002.sql
-      - ./sql/cities-dml.sql:/docker-entrypoint-initdb.d/003.sql
-      - ./sql/drugs-dml.sql:/docker-entrypoint-initdb.d/004.sql
-      - ./sql/pharmacy-dml.sql:/docker-entrypoint-initdb.d/005.sql
-      - ./sql/pharmacy-geom.sql:/docker-entrypoint-initdb.d/006.sql
-      - ./sql/pharmacy-drugs-dml-1.sql:/docker-entrypoint-initdb.d/007.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    ports:
-      - "5432:5432"
-
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: max_health_app
     environment:
-      DATABASE_URL: "host=db user=postgres password=postgres dbname=max_health port=5432 sslmode=disable TimeZone=Asia/Jakarta"
+      DATABASE_URL: "host=aws-0-ap-southeast-1.pooler.supabase.com user=postgres password=b2HMFWKldFsCQgiF dbname=postgres port=6543 sslmode=require TimeZone=Asia/Jakarta"
     ports:
       - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
     env_file:
       - .env

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	// "database/sql"
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
@@ -100,7 +99,11 @@ func (r *pharmacyDrugRepositoryPostgres) GetProductListing(ctx context.Context, 
 
 	if query.Search != nil {
 		sql += `$` + strconv.Itoa(len(args)+1)
-		args = append(args, "%"+*query.Search+"%")
+		searchTerm := "%"
+		if query.Search != nil && *query.Search != "" {
+			searchTerm = "%" + *query.Search + "%"
+		}
+		args = append(args, searchTerm)
 	} else {
 		sql += `'%%'`
 	}
@@ -382,6 +385,7 @@ func (r *pharmacyDrugRepositoryPostgres) GetPossibleStockMutation(ctx context.Co
 	if err != nil {
 		return pharmacyDrugs, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var tempDrug entity.PharmacyDrugDetail
 		err := rows.Scan(&tempDrug.Id, &tempDrug.PharmacyId, &tempDrug.PharmacyName, &tempDrug.PharmacyAddress, &tempDrug.Stock)

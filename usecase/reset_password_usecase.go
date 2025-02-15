@@ -39,7 +39,8 @@ func (u *authenticationUsecaseImpl) SendResetPasswordToken(ctx context.Context, 
 	if err != nil {
 		return apperror.InternalServerError(err)
 	}
-	resetPasswordUrl := fmt.Sprintf("http://%s%s/reset-password/verification/%s", os.Getenv("HOST"), os.Getenv("FE_PORT"), *resetPasswordToken)
+	// resetPasswordUrl := fmt.Sprintf("http://%s%s/reset-password/verification/%s", os.Getenv("HOST"), os.Getenv("FE_PORT"), *resetPasswordToken)
+	resetPasswordUrl := fmt.Sprintf("http://%s/reset-password/verification/%s", os.Getenv("HOST"), *resetPasswordToken)
 
 	resetPasswordCode := util.GenerateCode(6)
 
